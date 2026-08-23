@@ -77,6 +77,11 @@ def main():
         style = (r.get('Merchant Product ID') or '').strip()
         if not style:
             continue
+        # Exclude non-SKECHERS test/sample products (e.g. BIOTHERM Z9000033-AST 試用三件套裝)
+        brand_en = (r.get('Brand Name (EN)') or '').strip()
+        brand_chi = (r.get('Brand Name (CHI)') or '').strip()
+        if brand_en and brand_en.upper() != 'SKECHERS' and brand_chi and brand_chi.upper() != 'SKECHERS':
+            continue
         e = styles.setdefault(style, {
             'style': style,
             'sku': 'P0122001_S_' + style,

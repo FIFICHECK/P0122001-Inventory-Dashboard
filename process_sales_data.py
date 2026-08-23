@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Process Order Report XLSX and generate sales trend chart data
-for B0961005 Inventory Dashboard.
+for P0122001 Inventory Dashboard.
 
 Charts generated:
 1. GMV by date
@@ -25,8 +25,8 @@ DAY_NAMES_CN = ['星期一', '星期二', '星期三', '星期四', '星期五',
 DAY_NAMES_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
 # File paths
-INPUT_FILE = '/home/snkwok/B0961005-Inventory-Dashboard/reports/order_reports/ECOM-MMSNG_DAILY_ORDER_B0961005_20260711180000.xlsx'
-OUTPUT_FILE = '/home/snkwok/B0961005-Inventory-Dashboard/data/sales_trend_data.js'
+INPUT_FILE = '/home/snkwok/P0122001-Inventory-Dashboard/reports/order_reports/ECOM-MMSNG_DAILY_ORDER_P0122001_20260711180000.xlsx'
+OUTPUT_FILE = '/home/snkwok/P0122001-Inventory-Dashboard/data/sales_trend_data.js'
 
 def process_order_report():
     """Process the order report xlsx and return processed dataframe."""
@@ -48,7 +48,7 @@ def process_order_report():
     df['SKU_ID'] = df.iloc[:, 17].astype(str)    # SKU ID (R)
     df['Brand'] = df.iloc[:, 19].astype(str)      # Brand Chinese (T)
     df['SKU_Name_CN'] = df.iloc[:, 21].astype(str) # SKU Name Chinese (V)
-    df['Full_SKU'] = 'B0961005_S_' + df['SKU_ID'].str.replace('_', '_')
+    df['Full_SKU'] = 'P0122001_S_' + df['SKU_ID'].str.replace('_', '_')
     df['Qty'] = pd.to_numeric(df.iloc[:, 23], errors='coerce').fillna(0).astype(int)  # Qty (X)
     df['UnitPrice'] = pd.to_numeric(df.iloc[:, 24], errors='coerce').fillna(0)  # UnitPrice (Y)
     df['Discount'] = pd.to_numeric(df.iloc[:, 25], errors='coerce').fillna(0)     # Discount (Z)
@@ -192,7 +192,7 @@ def generate_js_file(chart_data, df, output_path):
     
     js_content = f'''// Auto-generated sales trend data
 // Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-// Source: ECOM-MMSNG_DAILY_ORDER_B0961005_20260621180001.xlsx
+// Source: ECOM-MMSNG_DAILY_ORDER_P0122001_20260621180001.xlsx
 
 const salesTrendData = {chart_data_json};
 

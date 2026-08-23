@@ -1,4 +1,4 @@
-name: B0961005 Inventory Update
+name: P0122001 Inventory Update
 
 on:
   workflow_dispatch:
@@ -63,12 +63,12 @@ jobs:
                   await page.wait_for_timeout(1000)
                   print("✅ On inventory report page")
                   
-                  # Select B0961005 - form auto-submits on change, so wait for navigation
-                  print("🔄 Selecting B0961005...")
+                  # Select P0122001 - form auto-submits on change, so wait for navigation
+                  print("🔄 Selecting P0122001...")
                   async with page.expect_navigation(wait_until='domcontentloaded'):
-                      await page.select_option('#batchMerchant', 'B0961005')
+                      await page.select_option('#batchMerchant', 'P0122001')
                   await page.wait_for_timeout(2000)
-                  print("✅ B0961005 selected")
+                  print("✅ P0122001 selected")
                   
                   # Click the last Download button (most recent report)
                   print("📥 Clicking Download button...")

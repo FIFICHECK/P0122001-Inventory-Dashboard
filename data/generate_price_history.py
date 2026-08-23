@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-B0961005 Daily Price History Generator
+P0122001 Daily Price History Generator
 Reads the latest Exchange Jerry inventory CSV, extracts RSP/PSP for each SKU,
 and appends a new daily snapshot to the price history JSON file.
 
@@ -17,7 +17,7 @@ from datetime import datetime, date
 from pathlib import Path
 
 # Paths
-REPO_DIR = Path("/tmp/B0961005-Inventory-Dashboard")
+REPO_DIR = Path("/tmp/P0122001-Inventory-Dashboard")
 CRON_OUTPUT_DIR = Path.home() / ".hermes/cron/output/exchange-jerry-inventory"
 PRICE_HISTORY_FILE = REPO_DIR / "data/price_history.json"
 

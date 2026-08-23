@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-B0961005 Daily Order Report Automation
+P0122001 Daily Order Report Automation
 Runs as GitHub Actions cron job at 9am HKT daily.
 
 Steps:
 1. Login to MMS (merchant.shoalter.com)
-2. Download TODAY's partial report for B0961005
-3. Download YESTERDAY's final report for B0961005
+2. Download TODAY's partial report for P0122001
+3. Download YESTERDAY's final report for P0122001
 4. Merge XLSX data into data/order_data.json
 5. Update data/order_reports_manifest.json
 6. Regenerate data/sales_trend_data.js
@@ -29,7 +29,7 @@ from playwright.async_api import async_playwright, TimeoutError as PwTimeout
 MMS_URL  = "https://merchant.shoalter.com"
 MMS_USER = "***REMOVED***"
 MMS_PASS = os.environ.get("MMS_PASSWORD", "***REMOVED***!!!")
-STORE_ID = "B0961005"
+STORE_ID = "P0122001"
 HKT      = timezone(timedelta(hours=8))
 
 REPO_ROOT   = Path(__file__).parent
@@ -120,7 +120,7 @@ async def navigate_to_order_report(page):
 
 
 async def set_store_and_date(page, target_date: datetime):
-    """Select store B0961005 and set the report date."""
+    """Select store P0122001 and set the report date."""
     date_ymd = target_date.strftime("%Y-%m-%d")
     date_dmy = target_date.strftime("%d/%m/%Y")
     print(f"  Setting store={STORE_ID}, date={date_ymd}...")
@@ -292,7 +292,7 @@ def parse_xlsx(xlsx_path: Path) -> dict:
                 except:
                     pass
 
-        full_sku = f"B0961005_S_{sku_id_raw}"
+        full_sku = f"P0122001_S_{sku_id_raw}"
         brand    = str(brand_cn) if brand_cn else "Unknown"
 
         try:
@@ -390,10 +390,10 @@ def update_manifest(xlsx_path: Path, gmv_total: float, target_date: datetime):
 # ── Inject new chart data into index.html (incremental, preserves history) ────
 
 def _norm(s):
-    return s.replace("B0961005_S_", "")
+    return s.replace("P0122001_S_", "")
 
 def _pfx(bare):
-    return bare if bare.startswith("B0961005_S_") else "B0961005_S_" + bare
+    return bare if bare.startswith("P0122001_S_") else "P0122001_S_" + bare
 
 def inject_into_index_html(new_chart):
     """Merge new_chart into existing salesTrendData in index.html.
@@ -629,7 +629,7 @@ async def main():
     yesterday = today - timedelta(days=1)
 
     print("=" * 55)
-    print(f"B0961005 Daily Order Report — {now.strftime('%Y-%m-%d %H:%M HKT')}")
+    print(f"P0122001 Daily Order Report — {now.strftime('%Y-%m-%d %H:%M HKT')}")
     print(f"TODAY:     {today.strftime('%Y-%m-%d')}  (partial)")
     print(f"YESTERDAY: {yesterday.strftime('%Y-%m-%d')}  (final)")
     print("=" * 55)

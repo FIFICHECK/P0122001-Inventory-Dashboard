@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate order report JSON data from B0961005 daily order report xlsx.
+Generate order report JSON data from P0122001 daily order report xlsx.
 Run after downloading the latest order report from MMS.
 """
 import openpyxl, json, sys
@@ -47,8 +47,8 @@ def process_order_report(xlsx_path, output_json_path):
                 except:
                     hour = 0
 
-        # Full SKU ID format: B0961005_S_{R_value}
-        full_sku = f'B0961005_S_{sku_id_raw}'
+        # Full SKU ID format: P0122001_S_{R_value}
+        full_sku = f'P0122001_S_{sku_id_raw}'
 
         # GMV calculation
         try:

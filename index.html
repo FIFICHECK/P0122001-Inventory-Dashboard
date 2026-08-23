@@ -3,54 +3,1775 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>B0961005 Inventory Dashboard</title>
+    <title>P0122001 Store Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        h1 { color: #333; }
-        .stats { display: flex; gap: 20px; margin: 20px 0; flex-wrap: wrap; }
-        .stat { background: #e3f2fd; padding: 15px 25px; border-radius: 4px; }
-        .stat-value { font-size: 24px; font-weight: bold; color: #1976d2; }
-        .stat-label { color: #666; font-size: 14px; }
-        .btn { display: inline-block; padding: 12px 24px; background: #1976d2; color: white; text-decoration: none; border-radius: 4px; margin: 10px 5px 10px 0; }
-        .btn:hover { background: #1565c0; }
-        .updated { color: #666; margin-top: 20px; font-size: 14px; }
-    </style>
+        :root { --primary: #1e40af; --success: #16a34a; --warning: #d97706; --danger: #dc2626; }
+        body { background: #f0f4f8; font-family: 'Inter', system-ui, sans-serif; }
+        .card { border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: none; }
+        .header-bg { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius: 16px; }
+        .kpi-card { text-align: center; padding: 20px; cursor: pointer; transition: transform 0.2s; }
+        .kpi-card:hover { transform: translateY(-4px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+        .kpi-value { font-size: 2.5rem; font-weight: 700; }
+        .kpi-label { font-size: 0.8rem; color: #64748b; margin-top: 4px; }
+        .table { font-size: 0.8rem; }
+        .table-container { max-height: 450px; overflow-y: auto; }
+        .table thead th { background: #f8fafc; position: sticky; top: 0; z-index: 1; border-bottom: 2px solid #e2e8f0; }
+        .table tbody tr { cursor: pointer; transition: background 0.15s; }
+        .table tbody tr:hover { background: #f1f5f9; }
+        .nav-tabs { border-bottom: 2px solid #e2e8f0; }
+        .nav-tabs .nav-link { border: none; color: #64748b; font-weight: 500; padding: 12px 20px; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+        .nav-tabs .nav-link:hover { color: var(--primary); }
+        .nav-tabs .nav-link.active { color: var(--primary); border-bottom: 3px solid var(--primary); background: transparent; }
+        .badge-zero { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 4px 10px; }
+        .badge-low { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; padding: 4px 10px; }
+        .badge-normal { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; padding: 4px 10px; }
+        .badge-high { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 4px 10px; }
+        .tab-content { padding-top: 20px; }
+        .detail-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; }
+        .detail-modal.show { display: flex; }
+        .detail-card { background: white; border-radius: 16px; padding: 30px; max-width: 500px; width: 90%; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; }
+        .table-responsive { border-radius: 0 0 16px 16px; }
+
+/* Japanese-style sales chart nav buttons - pill design */
+        .jp-btn-nav { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 8px; padding: 4px 0; scrollbar-width: thin; }
+        .jp-btn-nav::-webkit-scrollbar { height: 4px; }
+        .jp-btn-nav::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+        .jp-btn { 
+            flex-shrink: 0;
+            padding: 6px 14px; 
+            font-size: 0.75rem; 
+            font-weight: 500;
+            border-radius: 20px; 
+            border: 1.5px solid #e0e0e0;
+            background: #fff;
+            color: #555;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .jp-btn:hover { 
+            background: #f8f9fa; 
+            border-color: #bbb;
+            color: #333;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+        .jp-btn.active { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: #fff;
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.35);
+        }
+        .jp-btn.active:hover {
+            background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
+        }
+        </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📦 B0961005 Inventory Dashboard</h1>
-        <p>Merchant: <strong>Hong Kong online Community pharmacy superstore</strong></p>
-        
-        <div class="stats">
-            <div class="stat">
-                <div class="stat-value">188</div>
-                <div class="stat-label">Total SKUs</div>
-            </div>
-            <div class="stat">
-                <div class="stat-value">183</div>
-                <div class="stat-label">Online</div>
-            </div>
-            <div class="stat">
-                <div class="stat-value">51</div>
-                <div class="stat-label">Brands</div>
-            </div>
-            <div class="stat">
-                <div class="stat-value">97</div>
-                <div class="stat-label">Alerts</div>
-            </div>
-            <div class="stat">
-                <div class="stat-value">188</div>
-                <div class="stat-label">Price Issues</div>
+    <div class="container-fluid py-4 px-4">
+        <div class="card mb-4 header-bg text-white">
+            <div class="card-body py-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="fw-bold mb-0">👟 P0122001 Store Dashboard</h2>
+                        <p class="mb-0 opacity-75">SKECHERS 香港官方網上商店</p>
+                        <p class="mb-0" style="color:rgba(255,255,255,0.7);font-size:0.85rem;margin-top:4px">📅 Inventory Report: <span id="invReportDate">—</span></p>
+                        <p class="mb-0" style="color:rgba(255,255,255,0.7);font-size:0.85rem;margin-top:2px">📅 Order Report: <span id="orderReportDate">—</span></p>
+                    </div>
+                    <span id="countdownDisplay" style="color:rgba(255,255,255,0.9);font-size:0.85rem;font-weight:500" title="Auto-refresh when cron job completes">🔄 Cron</span>
+                </div>
             </div>
         </div>
-        
-        <a href="B0961005_Inventory_Dashboard_20260617_100523.html" class="btn">📊 Open Full Dashboard</a>
-        <a href="reports/" class="btn">📥 Download Reports</a>
-        
-        <div class="updated">
-            Last updated: 2026-06-17 10:05:23
+
+        <div class="row mb-4">
+            <div class="col-md-2"><div class="card kpi-card" onclick="switchTab('all')"><div class="kpi-value" style="color:var(--primary)">364</div><div class="kpi-label">📦 Total SKUs</div></div></div>
+            <div class="col-md-2"><div class="card kpi-card"><div class="kpi-value" style="color:var(--success)">7,490</div><div class="kpi-label">📊 Total Stock</div></div></div>
+            <div class="col-md-2"><div class="card kpi-card border-danger" onclick="switchTab('alerts')"><div class="kpi-value" style="color:var(--danger)">132</div><div class="kpi-label">🚫 Zero (0)</div></div></div>
+            <div class="col-md-2"><div class="card kpi-card border-warning" onclick="switchTab('alerts')"><div class="kpi-value" style="color:var(--warning)">136</div><div class="kpi-label">⚠️ Low (1-9)</div></div></div>
+            <div class="col-md-2"><div class="card kpi-card"><div class="kpi-value" style="color:var(--success)">63</div><div class="kpi-label">🟢 Normal (10-49)</div></div></div>
+            <div class="col-md-2"><div class="card kpi-card"><div class="kpi-value" style="color:var(--primary)">33</div><div class="kpi-label">🔵 High (50+)</div></div></div>
         </div>
+
+        <ul class="nav nav-tabs">
+            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#all">📋 All</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#skuid">🔢 By Online SKU</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#brand">🏷️ Brand</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#category">📦 By Category</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#skustatus">📊 By SKU Status</button></li>
+            <li class="nav-item"><button class="nav-link text-danger" data-bs-toggle="tab" data-bs-target="#alerts">⚠️ Alerts</button></li>
+            <li class="nav-item"><button class="nav-link text-warning" data-bs-toggle="tab" data-bs-target="#newsku">🆕 New SKU</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#pricecheck">💰 Price Check</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#report">📋 Report</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#salestrend">📈 Sales Trend</button></li>
+        </ul>
+
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="all">
+                <div class="card mt-3">
+                    <div class="card-header d-flex gap-2 py-3 flex-wrap">
+                        <input type="text" id="searchAll" placeholder="🔍 Search..." class="form-control" style="max-width:200px" onkeyup="filterTable('all')">
+                        <select id="filterAll" class="form-select" style="width:120px" onchange="filterTable('all')"><option value="all">All Status</option><option value="zero">🚫 Zero (0)</option><option value="low">⚠️ Low (1-9)</option><option value="normal">🟢 Normal (10-49)</option><option value="high">🔵 High (50+)</option></select>
+                        <select id="brandAll" class="form-select" style="width:160px" onchange="filterTable('all')"><option value="all">All Brands</option></select>
+                    </div>
+                    <div class="table-container">
+                        <table class="table table-hover mb-0"><thead><tr><th>SKU</th><th>Product Name</th><th class="text-end">Stock</th><th>Status</th><th>Brand</th></tr></thead><tbody id="tableAll"><tr><td colspan="5" class="text-center text-muted py-4">暫無庫存數據 — 等待 P0122001 inventory report</td></tr></tbody></table>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="skuid">
+                <div class="card mt-3">
+                    <div class="card-header d-flex gap-2 py-3 flex-wrap">
+                        <input type="text" id="searchSku" placeholder="🔍 Search SKU..." class="form-control" style="max-width:200px" onkeyup="filterTable('sku')">
+                        <select id="filterSku" class="form-select" style="width:120px" onchange="filterTable('sku')"><option value="all">All Status</option><option value="zero">🚫 Zero (0)</option><option value="low">⚠️ Low (1-9)</option><option value="normal">🟢 Normal (10-49)</option><option value="high">🔵 High (50+)</option></select>
+                        <select id="brandSku" class="form-select" style="width:160px" onchange="filterTable('sku')"><option value="all">All Brands</option></select>
+                    </div>
+                    <div class="table-container">
+                        <table class="table table-hover mb-0"><thead><tr><th>SKU</th><th>Product Name</th><th class="text-end">Stock</th><th>Status</th><th>Brand</th></tr></thead><tbody id="tableSku"><tr><td colspan="5" class="text-center text-muted py-4">暫無庫存數據 — 等待 P0122001 inventory report</td></tr></tbody></table>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="brand">
+                <div class="card mt-3">
+                    <div class="table-container">
+                        <table class="table table-hover mb-0"><thead><tr><th>Brand</th><th class="text-center">Products</th><th class="text-end">Total Stock</th><th>HKTVmall</th></tr></thead><tbody></tbody></table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="category">
+                <div class="card mt-3">
+                    <div class="card-header py-3 d-flex gap-2 flex-wrap align-items-center">
+                        <span class="fw-bold">📦 By Category</span>
+                        <input type="text" id="categoryNameSearch" placeholder="🔍 Category Name..." class="form-control form-control-sm" style="width:150px" onkeyup="filterCategoryTable()">
+                        <select id="categoryFilter" class="form-select form-select-sm" style="width:180px" onchange="filterCategoryTable()">
+                            <option value="type">By Category Type (大類)</option>
+                            <option value="full">By Full Category Code (完整)</option>
+                        </select>
+                        <select id="onlineFilter" class="form-select form-select-sm" style="width:130px" onchange="filterCategoryTable()">
+                            <option value="">Online/Offline</option>
+                            <option value="online">Online</option>
+                            <option value="offline">Offline</option>
+                        </select>
+                        <select id="invisibleFilter" class="form-select form-select-sm" style="width:110px" onchange="filterCategoryTable()">
+                            <option value="">Invisible</option>
+                            <option value="Y">Y</option>
+                            <option value="N">N</option>
+                        </select>
+                        <select id="foosFilter" class="form-select form-select-sm" style="width:100px" onchange="filterCategoryTable()">
+                            <option value="">FOOS</option>
+                            <option value="Y">Y</option>
+                            <option value="N">N</option>
+                        </select>
+                        <span class="badge bg-secondary" id="categoryCount">5 category types</span>
+                    </div>
+                    <div class="table-container">
+                        <table class="table table-hover mb-0" id="categoryTable">
+                            <thead>
+                                <tr>
+                                    <th id="catCol1">Category</th>
+                                    <th id="catCol2">Code</th>
+                                    <th class="text-center">Products</th>
+                                    <th class="text-end">Total Stock</th>
+                                    <th class="text-center">🚫 Zero</th>
+                                    <th class="text-center">⚠️ Low</th>
+                                    <th class="text-center">🟢 Normal</th>
+                                    <th class="text-center">🔵 High</th>
+                                    <th class="text-center">Online/Offline</th>
+                                    <th class="text-center">Invisible</th>
+                                    <th class="text-center">FOOS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="categoryTypeBody"></tbody>
+                            <tbody id="categoryFullBody" style="display:none"></tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer text-muted">
+                        <small>* 數據日期: 2026-08-23 (00:00:00) | Stock Level: Zero(0) / Low(1-9) / Normal(10-49) / High(50+)</small>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="skustatus">
+                <div class="row mt-3">
+        <!-- Online Status -->
+        <div class="col-md-4 mb-3">
+            <div class="card border-primary h-100">
+                <div class="card-header bg-primary text-white py-2 d-flex justify-content-between align-items-center">
+                    <span>🌐 Online Status</span>
+                    <span class="text-dark">349 online / 15 offline</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height:320px;overflow-y:auto">
+                        <table class="table table-hover table-sm mb-0">
+                            <thead style="position:sticky;top:0;background:#f8fafc;z-index:1">
+                                <tr><th>SKU</th><th>Product</th><th class="text-end">Stock</th><th>Status</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Invisible -->
+        <div class="col-md-4 mb-3">
+            <div class="card border-warning h-100">
+                <div class="card-header bg-warning text-dark py-2 d-flex justify-content-between align-items-center">
+                    <span>👁️ Invisible</span>
+                    <span class="text-dark">73 Y / 291 N</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height:320px;overflow-y:auto">
+                        <table class="table table-hover table-sm mb-0">
+                            <thead style="position:sticky;top:0;background:#f8fafc;z-index:1">
+                                <tr><th>SKU</th><th>Product</th><th class="text-end">Stock</th><th>Status</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Force Out Of Stock -->
+        <div class="col-md-4 mb-3">
+            <div class="card border-danger h-100">
+                <div class="card-header bg-danger text-white py-2 d-flex justify-content-between align-items-center">
+                    <span>🚫 Force OOS</span>
+                    <span class="text-dark">1 Y / 363 N</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height:320px;overflow-y:auto">
+                        <table class="table table-hover table-sm mb-0">
+                            <thead style="position:sticky;top:0;background:#f8fafc;z-index:1">
+                                <tr><th>SKU</th><th>Product</th><th class="text-end">Stock</th><th>Status</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div></div>
+            </div>
+            <div class="tab-pane fade" id="alerts">
+                <div class="row mt-3">
+                    <div class="col-md-6"><div class="card border-danger"><div class="card-header bg-danger text-white py-2">🚫 Zero Stock (132)</div><div class="table-container" style="max-height:400px"><table class="table table-hover mb-0"><thead><tr><th>SKU</th><th>Product</th><th class="text-end">Stock</th></tr></thead><tbody></tbody></table></div></div></div>
+                    <div class="col-md-6"><div class="card border-warning"><div class="card-header bg-warning text-dark py-2">⚠️ Low Stock (136)</div><div class="table-container" style="max-height:400px"><table class="table table-hover mb-0"><thead><tr><th>SKU</th><th>Product</th><th class="text-end">Stock</th></tr></thead><tbody></tbody></table></div></div></div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="newsku"><div class="card mt-3"><div class="card-header bg-warning text-dark py-2 d-flex gap-2 flex-wrap align-items-center">🆕 New SKU <small class="text-muted ms-2">最新上架 14 日內</small><input type="text" id="searchNewSku" placeholder="🔍 Search SKU / Product..." class="form-control form-control-sm ms-auto" style="max-width:200px" onkeyup="filterNewSkuTable()"><select id="filterNewSkuStatus" class="form-select form-select-sm" style="width:130px" onchange="filterNewSkuTable();updateNewSkuBrands()"><option value="all">全部狀態</option><option value="zero">🚫 Zero (0)</option><option value="low">⚠️ Low (1-9)</option><option value="normal">🟢 Normal (10-49)</option><option value="high">🔵 High (50+)</option></select><select id="brandNewSku" class="form-select form-select-sm" style="width:160px" onchange="filterNewSkuTable()"><option value="all">All Brands</option></select></div><div class="table-container"><table class="table table-hover mb-0"><thead><tr><th>SKU</th><th>Product Name</th><th class="text-end">Stock</th><th>Status</th><th>Brand</th></tr></thead><tbody id="tableNewSku"></tbody></table></div></div></div>
+
+            <div class="tab-pane fade" id="pricecheck">
+                <div class="card mt-3">
+                    <div class="card-header py-3 d-flex gap-2 flex-wrap align-items-center">
+                        <span class="fw-bold">💰 Price Check</span>
+                        <small id="priceCheckSub" class="text-muted ms-2">全部 SKUs（跟庫存報表）</small>
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-2">😡 價格上升 <span id="pcUpCount">0</span></span>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">😍 價格下跌 <span id="pcDownCount">0</span></span>
+                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">➖ 無變動 <span id="pcFlatCount">0</span></span>
+                        <span class="badge bg-secondary-subtle text-muted border">— 暫無數據 <span id="pcNoDataCount">0</span></span>
+                        <input type="text" id="searchPrice" placeholder="🔍 Search SKU / Brand..." class="form-control form-control-sm" style="width:200px" onkeyup="filterPriceTable()">
+                        <select id="filterPriceBrand" class="form-select form-select-sm" style="width:160px" onchange="filterPriceTable()"><option value="all">全部品牌</option></select>
+                        <select id="filterPrice" class="form-select form-select-sm" style="width:160px" onchange="filterPriceTable()">
+                            <option value="all">全部 All</option>
+                            <option value="up">😡 價格上升</option>
+                            <option value="down">😍 價格下跌</option>
+                            <option value="flat">➖ 無變動</option>
+                            <option value="none">— 暂无数据</option>
+                        </select>
+                    </div>
+                    <div class="table-container">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr><th>SKU</th><th>Brand</th><th>Product Name</th><th class="text-end">RSP</th><th class="text-end">PSP</th><th class="text-end">SKECHERS官網</th><th class="text-end">差價</th><th class="text-center">走向</th><th class="text-center">變動</th><th>狀態</th></tr>
+                            </thead>
+                            <tbody id="tablePrice"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            id="report">
+                <div class="card mt-3">
+                    <div class="card-header py-3">
+                        <span class="fw-bold">📋 Daily Inventory Report 下載</span>
+                        <small class="text-muted ms-2">每日最新版本 (10pm)</small>
+                    </div>
+                    <div class="table-container">
+                        <table class="table table-hover mb-0" style="table-layout:fixed">
+                            <colgroup>
+                                <col style="width:30%">
+                                <col style="width:20%">
+                                <col style="width:25%">
+                                <col style="width:25%">
+                            </colgroup>
+                            <thead>
+                                <tr><th>Date 日期</th><th class="text-center">時間</th><th class="text-end">SKU 數量</th><th>Download 下載</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header py-3">
+                        <span class="fw-bold">📦 Daily Order Report 下載</span>
+                        <small class="text-muted ms-2">每日銷售報告</small>
+                    </div>
+                    <div class="table-container">
+                        <table class="table table-hover mb-0" style="table-layout:fixed">
+                            <colgroup>
+                                <col style="width:30%">
+                                <col style="width:20%">
+                                <col style="width:25%">
+                                <col style="width:25%">
+                            </colgroup>
+                            <thead>
+                                <tr><th>Date 日期</th><th class="text-center">時間</th><th class="text-end">GMV</th><th>Download 下載</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+    
+<div class="tab-pane fade" id="salestrend">
+                <div class="card mt-3">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <span class="fw-bold">📈 Sales Trend 銷售趨勢</span>
+                        <div class="d-flex gap-3 align-items-center">
+                            <span id="salesDateFilterRow">
+                            <select id="salesDateFilter" class="form-select form-select-sm" style="width:130px" onchange="filterSalesByDate()">
+                                <option value="">全部日期</option>
+                            </select>
+                            </span>
+                            <span id="salesMonthFilterRow">
+                            <select id="salesMonthFilter" class="form-select form-select-sm" style="width:120px" onchange="filterSalesByMonth()">
+                                <option value="">全部月份</option>
+                            </select>
+                            </span>
+                            <span id="salesYearFilterRow">
+                            <select id="salesYearFilter" class="form-select form-select-sm" style="width:100px" onchange="filterSalesByYear()">
+                                <option value="">全部年份</option>
+                            </select>
+                            </span>
+                            <span id="salesRangeFilterRow" style="display:none;">
+                                <input type="date" id="salesDateFrom" class="form-control form-control-sm" style="width:140px" onchange="filterSalesByDateRange()">
+                                <span class="text-muted">&mdash;</span>
+                                <input type="date" id="salesDateTo" class="form-control form-control-sm" style="width:140px" onchange="filterSalesByDateRange()">
+                            </span>
+                            <button type="button" class="btn btn-sm btn-success" onclick="downloadSalesTrendExcel()" title="下載當前圖表及 filter 嘅數據 (Excel)">
+                                <i class="bi bi-download me-1"></i>📥 下載 Excel
+                            </button>
+                            <div class="d-flex flex-column gap-2">
+                                <div class="d-flex gap-2 flex-wrap align-items-center">
+                                    <span id="stThisMonthLabel">當月 (---)</span>
+                                    <span class="text-success fw-bold">GMV $<span id="stTotalGMV">0</span></span>
+                                    <span class="badge bg-success">Orders <span id="stTotalOrders">0</span></span>
+                                    <span class="badge bg-warning text-dark">Avg $<span id="stAvgGMV">0</span></span>
+                                </div>
+                                <div class="d-flex gap-2 flex-wrap align-items-center">
+                                    <span id="stLastMonthLabel">上月 (---)</span>
+                                    <span class="text-success fw-bold">GMV $<span id="stLastGMV">0</span></span>
+                                    <span class="badge bg-success">Orders <span id="stLastOrders">0</span></span>
+                                    <span class="badge bg-warning text-dark">Avg $<span id="stLastAvg">0</span></span>
+                                </div>
+                                <div class="d-flex gap-2 flex-wrap align-items-center">
+                                    <span id="stMonthBeforeLastLabel">上上月 (---)</span>
+                                    <span class="text-success fw-bold">GMV $<span id="stMonthBeforeLastGMV">0</span></span>
+                                    <span class="badge bg-success">Orders <span id="stMonthBeforeLastOrders">0</span></span>
+                                    <span class="badge bg-warning text-dark">Avg $<span id="stMonthBeforeLastAvg">0</span></span>
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Chart Navigation -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="jp-btn-nav" id="salesChartNav">
+                                    <button type="button" class="jp-btn active" onclick="switchSalesChart('gmvByDate', this)">1. GMV by Date</button>
+                                    <button type="button" class="jp-btn" onclick="switchSalesChart('gmvByMonth', this)">2. GMV by Monthly</button>
+                                    <button type="button" class="jp-btn" onclick="switchSalesChart('gmvByHour', this)">3. GMV by Hour</button>
+                                    <button type="button" class="jp-btn" onclick="switchSalesChart('gmvByDayOfWeek', this)">4. GMV by Day of Week</button>
+                                    <button type="button" class="jp-btn" onclick="switchSalesChart('gmvBySkuDaily', this)">5. GMV by SKU (Daily)</button>
+                                    <button type="button" class="jp-btn" onclick="switchSalesChart('gmvBySkuMonthly', this)">6. GMV by SKU (Monthly)</button>
+                                    <button type="button" class="jp-btn" onclick="switchSalesChart('qtyBySkuDaily', this)">7. Qty by SKU (Daily)</button>
+                                    <button type="button" class="jp-btn" onclick="switchSalesChart('qtyBySkuMonthly', this)">8. Qty by SKU (Monthly)</button>
+                                    <button type="button" class="jp-btn" onclick="switchSalesChart('gmvByBrandDaily', this)">9. GMV by Brand (Daily)</button>
+                                    <button type="button" class="jp-btn" onclick="switchSalesChart('gmvByBrandMonthly', this)">10. GMV by Brand (Monthly)</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Chart Display -->
+                        <div class="chart-container" style="position: relative; height: 400px;">
+                            <canvas id="salesTrendChart"></canvas>
+                        </div>
+                        <div id="salesTableContainer" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="text-center mt-4 text-muted"><small>P0122001 Inventory | Exchange Portal | Auto-updated by Hermes Agent</small></div>
     </div>
+    <div class="detail-modal" id="detailModal"><div class="detail-card"><h4 id="modalTitle" class="mb-3"></h4><p id="modalContent"></p><div class="text-end"><button class="btn btn-secondary" onclick="closeModal()">Close</button></div></div></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function switchTab(t){document.querySelector('[data-bs-target="#'+t+'"]').click()}
+        function showDetail(sku,name,inv,status){
+            const L={'zero':'🚫 Zero','low':'⚠️ Low','normal':'🟢 Normal','high':'🔵 High'};
+            document.getElementById('modalTitle').textContent=name;
+            document.getElementById('modalContent').innerHTML='<table class="table"><tr><td><strong>SKU</strong></td><td><code>'+sku+'</code></td></tr><tr><td><strong>Stock</strong></td><td>'+inv.toLocaleString()+'</td></tr><tr><td><strong>Status</strong></td><td>'+L[status]+'</td></tr></table>';
+            document.getElementById('detailModal').classList.add('show');
+        }
+        function closeModal(){document.getElementById('detailModal').classList.remove('show')}
+        document.getElementById('detailModal').addEventListener('click',function(e){if(e.target===this)closeModal()});
+        const BUILD_VERSION = '2026-08-24 00:35:43';
+        // Check cron job update every 30s — auto-reload only if version changed
+        function checkVersion() {
+            fetch('/P0122001-Inventory-Dashboard/version.json?' + Date.now())
+                .then(r => r.json())
+                .then(v => {
+                    if (v.build_ts && v.build_ts !== 1787502943) {
+                        console.log('New cron build detected: ' + v.build_time + ' — reloading...');
+                        location.reload();
+                    }
+                })
+                .catch(() => {}); // ignore fetch errors
+        }
+        setInterval(checkVersion, 30000);
+        function filterTable(type){
+            let s=document.getElementById(type==='all'?'searchAll':'searchSku').value.toLowerCase();
+            let fEl=document.getElementById(type==='all'?'filterAll':'filterSku');
+            let f=fEl?fEl.value:'all';
+            let bEl=document.getElementById(type==='all'?'brandAll':'brandSku');
+            let brandFilter=bEl?bEl.value:'all';
+            let tbody=document.getElementById(type==='all'?'tableAll':'tableSku');
+            if(!tbody)return;
+            tbody.querySelectorAll('tr').forEach(r=>{
+                let show=r.textContent.toLowerCase().includes(s);
+                if(f!=='all'&&r.cells[3]&&!r.cells[3].textContent.toLowerCase().includes(f))show=false;
+                if(brandFilter!=='all'&&r.dataset.brand!==brandFilter)show=false;
+                r.style.display=show?'':'none';
+            });
+        }
+        function filterNewSkuTable(){
+            let s=document.getElementById('searchNewSku').value.toLowerCase();
+            let fEl=document.getElementById('filterNewSkuStatus');
+            let f=fEl?fEl.value:'all';
+            let bEl=document.getElementById('brandNewSku');
+            let brandFilter=bEl?bEl.value:'all';
+            let tbody=document.getElementById('tableNewSku');
+            if(!tbody)return;
+            tbody.querySelectorAll('tr').forEach(r=>{
+                let show=r.textContent.toLowerCase().includes(s);
+                if(f!=='all'&&r.cells[3]&&!r.cells[3].textContent.toLowerCase().includes(f))show=false;
+                if(brandFilter!=='all'&&r.dataset.brand!==brandFilter)show=false;
+                r.style.display=show?'':'none';
+            });
+        }
+        function updateNewSkuBrands(){
+            let fEl=document.getElementById('filterNewSkuStatus');
+            let f=fEl?fEl.value:'all';
+            let tbody=document.getElementById('tableNewSku');
+            if(!tbody)return;
+            let brands=new Set();
+            tbody.querySelectorAll('tr').forEach(r=>{
+                let match=true;
+                if(f!=='all'&&r.cells[3]&&!r.cells[3].textContent.toLowerCase().includes(f))match=false;
+                if(match&&r.dataset.brand)brands.add(r.dataset.brand);
+            });
+            let bEl=document.getElementById('brandNewSku');
+            let currentBrand=bEl?bEl.value:'all';
+            bEl.innerHTML='<option value="all">All Brands</option>';
+            let sorted=[...brands].sort();
+            sorted.forEach(b=>{bEl.innerHTML+=`<option value="${b}">${b}</option>`});
+            if(currentBrand!=='all'&&brands.has(currentBrand))bEl.value=currentBrand;
+        }
+        function filterCategoryTable(){
+            const select = document.getElementById('categoryFilter');
+            const view = select.value;
+            const typeBody = document.getElementById('categoryTypeBody');
+            const fullBody = document.getElementById('categoryFullBody');
+            const col1 = document.getElementById('catCol1');
+            const col2 = document.getElementById('catCol2');
+            const categoryCount = document.getElementById('categoryCount');
+
+            const onlineFilter = document.getElementById('onlineFilter')?.value || '';
+            const invisibleFilter = document.getElementById('invisibleFilter')?.value || '';
+            const foosFilter = document.getElementById('foosFilter')?.value || '';
+            const nameSearch = document.getElementById('categoryNameSearch')?.value.toLowerCase() || '';
+
+            if (view === 'type') {
+                typeBody.style.display = '';
+                fullBody.style.display = 'none';
+                col1.textContent = 'Category';
+                col2.textContent = 'Code';
+                if(categoryCount) categoryCount.textContent = typeBody.querySelectorAll('tr').length + ' category types';
+            } else {
+                typeBody.style.display = 'none';
+                fullBody.style.display = '';
+                col1.textContent = 'Primary Category Code';
+                col2.textContent = 'Primary Category Name (CHI)';
+                if(categoryCount) categoryCount.textContent = fullBody.querySelectorAll('tr').length + ' categories';
+
+                const rows = fullBody.querySelectorAll('tr');
+                rows.forEach(row => {
+                    let show = true;
+
+                    if (nameSearch) {
+                        const catName = row.cells[1]?.textContent.toLowerCase() || '';
+                        if (!catName.includes(nameSearch)) show = false;
+                    }
+
+                    if (onlineFilter) {
+                        const online = row.dataset.online || '';
+                        if (onlineFilter === 'online' && online !== 'online') show = false;
+                        if (onlineFilter === 'offline' && online !== 'offline') show = false;
+                    }
+
+                    if (invisibleFilter) {
+                        const inv = row.dataset.invisible || '';
+                        if (inv !== invisibleFilter) show = false;
+                    }
+
+                    if (foosFilter) {
+                        const foos = row.dataset.foos || '';
+                        if (foos !== foosFilter) show = false;
+                    }
+
+                    row.style.display = show ? '' : 'none';
+                });
+            }
+        }
+        function filterPriceTable(){
+            const searchInput = document.getElementById('searchPrice');
+            const filterSelect = document.getElementById('filterPrice');
+            const brandSelect = document.getElementById('filterPriceBrand');
+            const tbody = document.getElementById('tablePrice');
+            if(!tbody) return;
+            const search = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            const filter = filterSelect ? filterSelect.value : 'all';
+            const brandFilter = brandSelect ? brandSelect.value : 'all';
+            tbody.querySelectorAll('tr').forEach(row => {
+                const rowBrand = row.getAttribute('data-brand') || '';
+                const pricedelta = row.getAttribute('data-pricedelta') || 'none';
+                const text = row.textContent.toLowerCase();
+                let show = true;
+                // Text search: match SKU or brand
+                if (search && !text.includes(search) && !rowBrand.toLowerCase().includes(search)) show = false;
+                // Brand dropdown filter
+                if (brandFilter !== 'all' && rowBrand !== brandFilter) show = false;
+                // Price change dropdown filter
+                if (filter !== 'all') {
+                    if (filter === 'up' && pricedelta !== 'up') show = false;
+                    if (filter === 'down' && pricedelta !== 'down') show = false;
+                    if (filter === 'flat' && pricedelta !== 'flat') show = false;
+                    if (filter === 'none' && pricedelta !== 'none') show = false;
+                }
+                row.style.display = show ? '' : 'none';
+            });
+        }
+        
+    // Sales Trend Data (embedded from order reports)
+    const salesTrendData = {
+  "gmv_by_date": {"labels": [], "data": []},
+  "summary": {}
+};
+    
+    let currentSalesChart = 'gmvByDate';
+    let currentDateFilter = '';
+    let currentMonthFilter = '';
+    let currentYearFilter = '';
+    let currentDateFrom = '';
+    let currentDateTo = '';
+    let isInitialLoad = true;
+    let salesChartInstance = null;
+
+    function populateSalesFilters() {
+        const dateSelect = document.getElementById('salesDateFilter');
+        const dates = salesTrendData.gmv_by_date.labels || [];
+        dates.forEach(d => {
+            const opt = document.createElement('option'); opt.value = d; opt.textContent = d;
+            dateSelect.appendChild(opt);
+        });
+        const monthSelect = document.getElementById('salesMonthFilter');
+        const months = salesTrendData.gmv_by_month.labels || [];
+        months.forEach(m => {
+            const opt = document.createElement('option'); opt.value = m; opt.textContent = m;
+            monthSelect.appendChild(opt);
+        });
+        // Populate year filter from dates
+        const yearSelect = document.getElementById('salesYearFilter');
+        const years = [...new Set(dates.map(d => d.substring(0, 4)))].sort().reverse();
+        years.forEach(y => {
+            const opt = document.createElement('option'); opt.value = y; opt.textContent = y;
+            yearSelect.appendChild(opt);
+        });
+    }
+
+    // Re-populate month options based on selected year, and date options based on selected month
+    function populateFilteredOptions() {
+        const dates = salesTrendData.gmv_by_date.labels || [];
+        const monthSelect = document.getElementById('salesMonthFilter');
+        const dateSelect = document.getElementById('salesDateFilter');
+        const yearSelect = document.getElementById('salesYearFilter');
+        
+        // Clear and repopulate year options - ALWAYS include "全部年份"
+        if (yearSelect) {
+            const allYears = [...new Set(dates.map(d => d.substring(0, 4)))].sort().reverse();
+            yearSelect.innerHTML = '<option value="">全部年份</option>';
+            allYears.forEach(y => {
+                const opt = document.createElement('option'); opt.value = y; opt.textContent = y;
+                yearSelect.appendChild(opt);
+            });
+            if (currentYearFilter) {
+                yearSelect.value = currentYearFilter;
+            }
+        }
+        
+        // Clear and repopulate month options
+        if (monthSelect) {
+            monthSelect.innerHTML = '<option value="">全部月份</option>';
+            let filteredMonths;
+            if (currentYearFilter) {
+                filteredMonths = [...new Set(dates.filter(d => d.startsWith(currentYearFilter)).map(d => d.substring(0, 7)))].sort().reverse();
+            } else {
+                // Use available_months (always current + 2 previous calendar months)
+                                filteredMonths = salesTrendData.available_months || salesTrendData.gmv_by_month.labels || [];
+
+            }
+            // Always show max 3 months (current + 2 previous)
+            filteredMonths = filteredMonths.slice(0, 3);
+            filteredMonths.forEach(m => {
+                const opt = document.createElement('option'); opt.value = m; opt.textContent = m;
+                monthSelect.appendChild(opt);
+            });
+            if (currentMonthFilter) {
+                monthSelect.value = currentMonthFilter;
+            }
+        }
+        
+        // Clear and repopulate date options
+        if (dateSelect) {
+            // Bottom 2 charts (Brand Daily/Monthly) should never show "全部日期"
+            // Brand Daily requires a specific date; Brand Monthly already hides date filter row
+            const isBrandChart = currentSalesChart && currentSalesChart.includes('Brand');
+            if (!isBrandChart) {
+                dateSelect.innerHTML = '<option value="">全部日期</option>';
+            } else {
+                dateSelect.innerHTML = '';
+            }
+            let filteredDates;
+            if (currentMonthFilter) {
+                filteredDates = dates.filter(d => d.startsWith(currentMonthFilter));
+            } else {
+                filteredDates = dates;
+            }
+            filteredDates.forEach(d => {
+                const opt = document.createElement('option'); opt.value = d; opt.textContent = d;
+                dateSelect.appendChild(opt);
+            });
+            if (currentDateFilter) {
+                dateSelect.value = currentDateFilter;
+            }
+        }
+    }
+
+    function filterSalesByDate() {
+        const dateSelect = document.getElementById('salesDateFilter');
+        const newDateFilter = dateSelect.value;
+        currentDateFilter = newDateFilter;
+        
+        // When a specific date is selected, sync month/year to match the date
+        if (currentDateFilter) {
+            // Derive month/year from date and set them, but date filter takes PRIORITY in getFilteredData
+            const year = currentDateFilter.substring(0, 4);
+            const month = currentDateFilter.substring(0, 7); // "2026-06"
+            
+            currentYearFilter = year;
+            currentMonthFilter = month;
+            
+            const monthSelect = document.getElementById('salesMonthFilter');
+            const yearSelect = document.getElementById('salesYearFilter');
+            if (monthSelect) monthSelect.value = month;
+            if (yearSelect) yearSelect.value = year;
+            
+            // Repopulate dropdowns to show only dates in selected month
+            populateFilteredOptions();
+            
+            // Ensure date dropdown shows the selected date after repopulation
+            dateSelect.value = currentDateFilter;
+        } else {
+            // When "全部日期" is selected, clear month filter to show all data
+            currentMonthFilter = '';
+            currentYearFilter = '';
+            const monthSelect = document.getElementById('salesMonthFilter');
+            const yearSelect = document.getElementById('salesYearFilter');
+            if (monthSelect) monthSelect.value = '';
+            if (yearSelect) yearSelect.value = '';
+            
+            // Repopulate dropdowns to show all available options
+            populateFilteredOptions();
+        }
+        switchSalesChart(currentSalesChart, document.querySelector('#salesChartNav .jp-btn.active'));
+    }
+
+    function filterSalesByMonth() {
+        const monthSelect = document.getElementById('salesMonthFilter');
+        currentMonthFilter = monthSelect.value;
+        // Clear date filter when month filter is selected
+        if (currentMonthFilter) {
+            currentDateFilter = '';
+        }
+        // Repopulate date options based on new month
+        populateFilteredOptions();
+        switchSalesChart(currentSalesChart, document.querySelector('#salesChartNav .jp-btn.active'));
+    }
+
+    function filterSalesByYear() {
+        const yearSelect = document.getElementById('salesYearFilter');
+        currentYearFilter = yearSelect.value;
+        // Clear month and date filters when year filter is selected
+        currentMonthFilter = '';
+        currentDateFilter = '';
+        // Repopulate month and date options based on new year
+        populateFilteredOptions();
+        switchSalesChart(currentSalesChart, document.querySelector('#salesChartNav .jp-btn.active'));
+    }
+
+    function filterSalesByDateRange() {
+        const fromEl = document.getElementById('salesDateFrom');
+        const toEl = document.getElementById('salesDateTo');
+        currentDateFrom = fromEl ? fromEl.value : '';
+        currentDateTo = toEl ? toEl.value : '';
+        switchSalesChart(currentSalesChart, document.querySelector('#salesChartNav .jp-btn.active'));
+    }
+
+    function getFilteredData(data, labels, chartName) {
+        let filteredLabels = labels;
+        let filteredData = data;
+        // Skip date/month filters for SKU, Brand charts - their data is already date-aggregated
+        // BUT DayOfWeek DOES apply month filter (labels contain full date like "2026-06-24 (星期三)")
+        if (chartName.includes('Sku') || chartName.includes('Brand')) {
+            return { labels: filteredLabels, data: filteredData };
+        }
+        // DayOfWeek: data labels are "Sunday (2026-07-12)" format
+        if (chartName === 'gmvByDayOfWeek') {
+            if (currentDateFilter) {
+                // Date filter: try exact date; if no data, fall back to month
+                filteredLabels = labels.filter(l => l.includes(currentDateFilter));
+                const idx = labels.findIndex(l => l.includes(currentDateFilter));
+                if (idx >= 0) {
+                    filteredData = Array.isArray(data) && data[idx] !== undefined ? [data[idx]] : [];
+                } else {
+                    // Date not found (no data for that day) → use month from date
+                    const monthFromDate = currentDateFilter.substring(0, 7);
+                    filteredLabels = [];
+                    filteredData = [];
+                    labels.forEach((l, i) => {
+                        if (l.includes(monthFromDate)) {
+                            filteredLabels.push(l);
+                            filteredData.push(data[i]);
+                        }
+                    });
+                }
+            } else if (currentMonthFilter) {
+                // Month filter: only if no date filter is set
+                filteredLabels = [];
+                filteredData = [];
+                labels.forEach((l, i) => {
+                    if (l.includes(currentMonthFilter)) {
+                        filteredLabels.push(l);
+                        filteredData.push(data[i]);
+                    }
+                });
+            }
+            return { labels: filteredLabels, data: filteredData };
+        }
+        // GMV by Hour with date filter: use gmv_by_date_hour data for selected date
+        if (chartName === 'gmvByHour' && currentDateFilter) {
+            const hourlyData = salesTrendData.gmv_by_date_hour;
+            if (hourlyData && hourlyData.data && hourlyData.data[currentDateFilter]) {
+                filteredLabels = hourlyData.hours || [];
+                filteredData = hourlyData.data[currentDateFilter] || [];
+            }
+            return { labels: filteredLabels, data: filteredData };
+        }
+        // Date filter applies to Daily, Hour, and Date charts (gmvByDayOfWeek handled separately above)
+        if (currentDateFilter && (chartName.includes('Daily') || chartName.includes('Hour') || chartName === 'gmvByDate')) {
+            const idx = labels.indexOf(currentDateFilter);
+            if (idx >= 0) {
+                filteredLabels = [labels[idx]];
+                filteredData = Array.isArray(data) && data[idx] !== undefined ? [data[idx]] : data;
+            }
+            return { labels: filteredLabels, data: filteredData };
+        }
+        // GMV by Hour with month filter: aggregate all days in the month from gmv_by_date_hour
+        if (chartName === 'gmvByHour' && currentMonthFilter) {
+            const hourlyData = salesTrendData.gmv_by_date_hour;
+            if (hourlyData && hourlyData.data) {
+                filteredLabels = hourlyData.hours || [];
+                const hourlyTotals = new Array(24).fill(0);
+                let dayCount = 0;
+                Object.keys(hourlyData.data).forEach(dateKey => {
+                    if (dateKey.startsWith(currentMonthFilter)) {
+                        dayCount++;
+                        const dayHours = hourlyData.data[dateKey];
+                        dayHours.forEach((val, h) => {
+                            hourlyTotals[h] += (parseFloat(val) || 0);
+                        });
+                    }
+                });
+                filteredData = dayCount > 0 
+                    ? hourlyTotals.map(v => Math.round(v * 100) / 100)
+                    : [];
+            }
+            return { labels: filteredLabels, data: filteredData };
+        }
+        // Month filter applies to all chart types
+        if (currentMonthFilter && (chartName.includes('Daily') || chartName.includes('Hour'))) {
+            filteredLabels = [];
+            filteredData = [];
+            labels.forEach((l, i) => {
+                if (l.startsWith(currentMonthFilter)) {
+                    filteredLabels.push(l);
+                    filteredData.push(data[i]);
+                }
+            });
+            return { labels: filteredLabels, data: filteredData };
+        }
+        if (currentMonthFilter && !chartName.includes('Daily') && !chartName.includes('Hour')) {
+            filteredLabels = [];
+            filteredData = [];
+            labels.forEach((l, i) => {
+                if (l.startsWith(currentMonthFilter)) {
+                    filteredLabels.push(l);
+                    filteredData.push(data[i]);
+                }
+            });
+            return { labels: filteredLabels, data: filteredData };
+        }
+        return { labels: filteredLabels, data: filteredData };
+    }
+
+    // Chart configuration mapping button IDs to data keys
+    const chartConfigs = {
+        'gmvByDate': { dataKey: 'gmv_by_date', type: 'bar', multiDataset: false },
+        'gmvByMonth': { dataKey: 'gmv_by_month', type: 'bar', multiDataset: false },
+        'gmvByHour': { dataKey: 'gmv_by_hour', type: 'bar', multiDataset: false },
+        'gmvByDayOfWeek': { dataKey: 'gmv_by_day_of_week', type: 'bar', multiDataset: false },
+        'gmvBySkuDaily': { dataKey: 'gmv_by_sku_daily', type: 'bar', multiDataset: true },
+        'gmvBySkuMonthly': { dataKey: 'gmv_by_sku_monthly', type: 'bar', multiDataset: true },
+        'qtyBySkuDaily': { dataKey: 'qty_by_sku_daily', type: 'bar', multiDataset: true },
+        'qtyBySkuMonthly': { dataKey: 'qty_by_sku_monthly', type: 'bar', multiDataset: true },
+        'gmvByBrandDaily': { dataKey: 'gmv_by_brand_daily', type: 'bar', multiDataset: true },
+        'gmvByBrandMonthly': { dataKey: 'gmv_by_brand_monthly', type: 'bar', multiDataset: true },
+    };
+
+    function switchSalesChart(chartName, btn) {
+        document.querySelectorAll('#salesChartNav .jp-btn').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        currentSalesChart = chartName;
+        const config = chartConfigs[chartName];
+        if (!config) return;
+        
+        // Only reset to current year-month-day on INITIAL page load
+        if (isInitialLoad) {
+            const now = new Date();
+            const currentYear = now.getFullYear().toString();
+            const currentMonth = (now.getMonth() + 1).toString().padStart(2, '0');
+            const currentDate = (now.getDate()).toString().padStart(2, '0');
+            const currentYearMonth = currentYear + '-' + currentMonth;
+            const currentFullDate = currentYear + '-' + currentMonth + '-' + currentDate;
+            
+            currentYearFilter = currentYear;
+            currentMonthFilter = currentYearMonth;
+            currentDateFilter = currentFullDate;
+            
+            const yearSelect = document.getElementById('salesYearFilter');
+            const monthSelect = document.getElementById('salesMonthFilter');
+            const dateSelect = document.getElementById('salesDateFilter');
+            if (yearSelect) yearSelect.value = currentYear;
+            if (monthSelect) monthSelect.value = currentMonthFilter;
+            if (dateSelect) dateSelect.value = currentDateFilter;
+            
+            // Re-populate dropdown options based on selected year/month
+            populateFilteredOptions();
+            isInitialLoad = false;
+        }
+        
+        // Date filter is hidden for GMV by Monthly, GMV by DayOfWeek, and SKU/Brand Daily/Monthly charts
+        const hideDateFilterCharts = ['gmvByMonth', 'gmvBySkuMonthly', 'qtyBySkuMonthly', 'gmvByBrandMonthly'];
+        const dateFilterRow = document.getElementById('salesDateFilterRow');
+        if (dateFilterRow) {
+            dateFilterRow.style.display = hideDateFilterCharts.includes(chartName) ? 'none' : '';
+        }
+        const monthFilterRow = document.getElementById('salesMonthFilterRow');
+        if (monthFilterRow) {
+            monthFilterRow.style.display = '';
+        }
+        const yearFilterRow = document.getElementById('salesYearFilterRow');
+        if (yearFilterRow) {
+            yearFilterRow.style.display = '';
+        }
+        
+        // Show date range filter only for SKU Daily charts (5 & 7)
+        const isSkuDailyChart = chartName === 'gmvBySkuDaily' || chartName === 'qtyBySkuDaily';
+        const rangeFilterRow = document.getElementById('salesRangeFilterRow');
+        if (rangeFilterRow) {
+            rangeFilterRow.style.display = isSkuDailyChart ? 'inline-flex' : 'none';
+        }
+        
+        // Map salesTrendData.summary to the format expected by updateSalesSummary
+        if (salesTrendData && salesTrendData.summary) {
+            salesSummary = {
+                totalGMV: salesTrendData.summary.total_gmv || 0,
+                totalOrders: salesTrendData.summary.total_orders || 0,
+                avgGMVPerOrder: salesTrendData.summary.avg_order_value || 0,
+                thisMonth: salesTrendData.summary.this_month || { label: '', gmv: 0, orders: 0, avg: 0 },
+                lastMonth: salesTrendData.summary.last_month || { label: '', gmv: 0, orders: 0, avg: 0 },
+                monthBeforeLast: salesTrendData.summary.month_before_last || { label: '', gmv: 0, orders: 0, avg: 0 }
+            };
+        }
+        updateSalesSummary();
+        const ctx = document.getElementById('salesTrendChart').getContext('2d');
+        const rawData = salesTrendData[config.dataKey];
+        let data;
+        if (config.multiDataset) {
+            // Apply date/month/year filter to multiDataset charts (SKU/Brand)
+            // rawData.data is a 2D array: data[dateIndex][skuIndex]
+            let filteredIndices = [];
+            const hasDateRange = currentDateFrom && currentDateTo;
+            const hasDateFilter = currentDateFilter && currentDateFilter.trim() !== '';
+
+            // Phase 1: Try date-range or date-specific filter
+            if (hasDateRange && chartName.includes('Daily')) {
+                rawData.labels.forEach((l, idx) => {
+                    if (l >= currentDateFrom && l <= currentDateTo) filteredIndices.push(idx);
+                });
+            } else if (hasDateFilter && !chartName.includes('Monthly')) {
+                rawData.labels.forEach((l, idx) => {
+                    if (l === currentDateFilter) filteredIndices.push(idx);
+                });
+            }
+
+            // Phase 2: Fallback if no matches from date filter — use month/year instead
+            if (filteredIndices.length === 0) {
+                rawData.labels.forEach((l, idx) => {
+                    if (currentMonthFilter) {
+                        if (l.startsWith(currentMonthFilter)) filteredIndices.push(idx);
+                    } else if (currentYearFilter) {
+                        if (l.startsWith(currentYearFilter)) filteredIndices.push(idx);
+                    } else {
+                        // No filters - show all
+                        filteredIndices.push(idx);
+                    }
+                });
+            }
+                        // Extract filtered labels and rows
+            const filteredLabels = filteredIndices.map(i => rawData.labels[i]);
+            const filteredData = filteredIndices.map(i => rawData.data[i]);
+            // FIX: Detect [sku_idx][month/date_idx] transposed data and transpose to [month/date_idx][sku_idx]
+            if (filteredData.length > 1 && filteredData[0].length === 1) {
+                filteredData = filteredData[0].map((_, c) => filteredData.map(r => r[c]));
+            }
+            data = { labels: filteredLabels, skus: rawData.skus, brands: rawData.brands, data: filteredData, isMultiDataset: true };
+                    } else {
+            const filtered = getFilteredData(rawData.data, rawData.labels, chartName);
+            data = { labels: filtered.labels, data: filtered.data };
+        }
+        if (salesChartInstance) {
+            salesChartInstance.destroy();
+            if (config.multiDataset) {
+                // Show TOP 10 bar chart + table for multiDataset charts
+                document.getElementById('salesTrendChart').style.display = '';
+                document.getElementById('salesTableContainer').style.display = '';
+                
+                // Calculate totals and find TOP 10
+                const isSkuChart = chartName.includes('Sku');
+                const isQty = chartName.toLowerCase().includes('qty');
+                const items = isSkuChart ? data.skus : data.brands;
+                const totals = items.map((item, idx) => {
+                    let sum = 0;
+                    data.data.forEach(row => { if (row && row[idx] !== undefined) sum += row[idx]; });
+                    return { item, sum };
+                });
+                totals.sort((a, b) => b.sum - a.sum);
+                const top10 = totals.slice(0, 10);
+                
+                // Prepare chart labels and values
+                const chartLabels = top10.map(t => {
+                    if (isSkuChart) {
+                        // Use product name from order report (sku_product_name_map), fallback to inventory name
+                        const name = (salesTrendData.sku_product_name_map && salesTrendData.sku_product_name_map[t.item])
+                            || salesTrendData.sku_name_map[t.item] || t.item;
+                        // Truncate long names
+                        return name.length > 20 ? name.substring(0, 17) + '...' : name;
+                    }
+                    return t.item;
+                });
+                const chartValues = top10.map(t => t.sum);
+                const isGmv = !isQty;
+                
+                // Create bar chart for TOP 10
+                const chartData = {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: isGmv ? 'GMV (HKD)' : 'Qty 件',
+                        data: chartValues,
+                        backgroundColor: [
+                            '#1e40af', '#dc2626', '#16a34a', '#d97706', '#7c3aed',
+                            '#db2777', '#0891b2', '#65a30d', '#f59e0b', '#6366f1'
+                        ]
+                    }]
+                };
+                const chartOptions = {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    const val = ctx.raw;
+                                    return isGmv ? ' $' + val.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' ' + val.toLocaleString() + ' 件';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: isGmv ? 'GMV (HKD)' : 'Quantity' }, beginAtZero: true },
+                        y: { title: { display: true, text: isSkuChart ? 'SKU' : 'Brand' } }
+                    }
+                };
+                salesChartInstance = new Chart(ctx, { type: 'bar', data: chartData, options: chartOptions });
+                
+                // Also show the full table
+                renderSalesTable(chartName, config, data);
+                return;
+            }
+        }
+        document.getElementById('salesTrendChart').style.display = '';
+        // Show table for ALL charts (Date, Month, Hour, SKU, Brand)
+        document.getElementById('salesTableContainer').style.display = '';
+        renderSalesTable(chartName, config, data);
+        // Also render MoM comparison for monthly chart
+        if (chartName === 'gmvByMonth') {
+            renderMoMComparison(data);
+        }
+        let chartData, chartOptions;
+        if (config.type === 'line') {
+            chartData = { labels: data.labels, datasets: [{ label: config.label, data: data.data, borderColor: config.color || '#1e40af', backgroundColor: (config.color || '#1e40af') + '20', fill: true, tension: 0.4 }] };
+            chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(ctx) { return config.yAxisLabel + ': $' + ctx.raw.toLocaleString(undefined, {minimumFractionDigits: 2}); } } } }, scales: { x: { title: { display: true, text: config.xAxisLabel } }, y: { title: { display: true, text: config.yAxisLabel }, beginAtZero: true } } };
+        } else if (config.type === 'bar') {
+            chartData = { labels: data.labels, datasets: [{ label: config.label, data: data.data, backgroundColor: config.color || '#3b82f6' }] };
+            chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(ctx) { return config.yAxisLabel + ': $' + ctx.raw.toLocaleString(undefined, {minimumFractionDigits: 2}); } } } }, scales: { x: { title: { display: true, text: config.xAxisLabel } }, y: { title: { display: true, text: config.yAxisLabel }, beginAtZero: true } } };
+        }
+        salesChartInstance = new Chart(ctx, { type: chartData.type || config.type, data: chartData, options: chartOptions });
+        renderSalesLegend(config, data);
+    }
+
+    // Download current chart's filtered data as Excel (.xlsx) — uses the SAME filter logic as switchSalesChart
+    function downloadSalesTrendExcel() {
+        const chartName = currentSalesChart || 'gmvByDate';
+        const config = chartConfigs[chartName];
+        if (!config) return;
+        const rawData = salesTrendData[config.dataKey];
+        if (!rawData) return;
+        const isSkuChart = chartName.includes('Sku');
+        const isBrandChart = chartName.includes('Brand');
+        const isQty = chartName.toLowerCase().includes('qty');
+
+        let summaryRows = [];
+        let detailRows = [];
+
+        if (config.multiDataset) {
+            // Apply same date/month/year filter as switchSalesChart
+            let filteredIndices = [];
+            const hasDateRange = currentDateFrom && currentDateTo;
+            const hasDateFilter = currentDateFilter && currentDateFilter.trim() !== '';
+            if (hasDateRange && chartName.includes('Daily')) {
+                rawData.labels.forEach((l, idx) => { if (l >= currentDateFrom && l <= currentDateTo) filteredIndices.push(idx); });
+            } else if (hasDateFilter && !chartName.includes('Monthly')) {
+                rawData.labels.forEach((l, idx) => { if (l === currentDateFilter) filteredIndices.push(idx); });
+            }
+            if (filteredIndices.length === 0) {
+                rawData.labels.forEach((l, idx) => {
+                    if (currentMonthFilter) { if (l.startsWith(currentMonthFilter)) filteredIndices.push(idx); }
+                    else if (currentYearFilter) { if (l.startsWith(currentYearFilter)) filteredIndices.push(idx); }
+                    else filteredIndices.push(idx);
+                });
+            }
+            const filteredLabels = filteredIndices.map(i => rawData.labels[i]);
+            let filteredData = filteredIndices.map(i => rawData.data[i]);
+            if (filteredData.length > 1 && filteredData[0].length === 1) {
+                filteredData = filteredData[0].map((_, c) => filteredData.map(r => r[c]));
+            }
+            const items = isSkuChart ? (rawData.skus || []) : (rawData.brands || []);
+            const valueHdr = isQty ? 'Qty 件' : 'GMV (HKD)';
+
+            // Summary sheet: item + total (sorted desc)
+            const totals = items.map((item, idx) => {
+                let sum = 0;
+                filteredData.forEach(row => { if (row && row[idx] !== undefined) sum += row[idx]; });
+                return { item, sum };
+            }).filter(t => t.sum > 0).sort((a, b) => b.sum - a.sum);
+
+            if (isSkuChart) summaryRows.push(['SKU ID', 'Brand', 'SKU Name (Chinese)', valueHdr]);
+            else summaryRows.push(['Brand', valueHdr]);
+            totals.forEach(t => {
+                if (isSkuChart) {
+                    const nm = (salesTrendData.sku_product_name_map && salesTrendData.sku_product_name_map[t.item])
+                        || salesTrendData.sku_name_map[t.item] || t.item;
+                    const br = salesTrendData.sku_brand_map ? salesTrendData.sku_brand_map[t.item] : '-';
+                    summaryRows.push([t.item, br, nm, Math.round(t.sum * 100) / 100]);
+                } else {
+                    summaryRows.push([t.item, Math.round(t.sum * 100) / 100]);
+                }
+            });
+
+            // Detail sheet: long format (date, item, value)
+            if (isSkuChart) detailRows.push(['日期', 'SKU ID', 'Brand', 'SKU Name (Chinese)', valueHdr]);
+            else detailRows.push(['日期', 'Brand', valueHdr]);
+            filteredLabels.forEach((l, i) => {
+                const row = filteredData[i] || [];
+                items.forEach((item, idx) => {
+                    const v = row[idx];
+                    if (v !== undefined && v > 0) {
+                        if (isSkuChart) {
+                            const nm = (salesTrendData.sku_product_name_map && salesTrendData.sku_product_name_map[item])
+                                || salesTrendData.sku_name_map[item] || item;
+                            const br = salesTrendData.sku_brand_map ? salesTrendData.sku_brand_map[item] : '-';
+                            detailRows.push([l, item, br, nm, Math.round(v * 100) / 100]);
+                        } else {
+                            detailRows.push([l, item, Math.round(v * 100) / 100]);
+                        }
+                    }
+                });
+            });
+        } else {
+            // Simple charts (1-4): filtered labels + values
+            const filtered = getFilteredData(rawData.data, rawData.labels, chartName);
+            const labelHdr = chartName === 'gmvByMonth' ? '月份' :
+                             chartName === 'gmvByHour' ? '小時' :
+                             chartName === 'gmvByDayOfWeek' ? '星期' : '日期';
+            summaryRows.push([labelHdr, isQty ? 'Qty 件' : 'GMV (HKD)']);
+            (filtered.labels || []).forEach((l, i) => {
+                summaryRows.push([l, filtered.data && filtered.data[i] !== undefined ? Math.round(filtered.data[i] * 100) / 100 : 0]);
+            });
+        }
+
+        if (typeof XLSX === 'undefined') {
+            alert('Excel 匯出函式未載入，請檢查網絡後重新整理頁面。');
+            return;
+        }
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryRows), 'Summary');
+        if (detailRows.length > 1) {
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detailRows), 'Detail');
+        }
+        const filterDesc = currentDateFilter || currentMonthFilter || currentYearFilter
+            || (currentDateFrom ? currentDateFrom + '_' + currentDateTo : 'All');
+        const fname = 'P0122001_SalesTrend_' + chartName + '_' + String(filterDesc).replace(/-/g, '').replace(/\//g, '') + '.xlsx';
+        XLSX.writeFile(wb, fname);
+    }
+
+    function renderSalesTable(chartName, config, data) {
+        const container = document.getElementById('salesTableContainer');
+        if (!container) return;
+        const isSkuChart = chartName.includes('Sku');
+        const isBrandChart = chartName.includes('Brand');
+        const isQty = chartName.toLowerCase().includes('qty');
+
+        // Build filter UI (persistent in DOM)
+        let filterHtml = '<div class="row g-2 mb-2 align-items-center" id="salesTableFilters">';
+
+        // Brand filter dropdown
+        if (isSkuChart || isBrandChart) {
+            const allBrands = [];
+            if (isSkuChart && data.skus) {
+                data.skus.forEach(sku => {
+                    const b = salesTrendData.sku_brand_map?.[sku];
+                    if (b && !allBrands.includes(b)) allBrands.push(b);
+                });
+            } else if (isBrandChart && data.brands) {
+                allBrands.push(...data.brands.filter(b => b));
+            }
+            allBrands.sort();
+            if (allBrands.length > 1) {
+                filterHtml += '<div class="col-auto"><select id="tableBrandFilter" class="form-select form-select-sm" style="width:auto;min-width:120px;" onchange="filterSalesTable()"><option value="">所有品牌</option>';
+                allBrands.forEach(b => { filterHtml += '<option value="' + b + '">' + b + '</option>'; });
+                filterHtml += '</select></div>';
+            }
+        }
+
+        // Keyword search
+        if (isSkuChart) {
+            filterHtml += '<div class="col"><div class="input-group input-group-sm"><span class="input-group-text">🔍</span><input type="text" id="tableKeywordSearch" class="form-control" placeholder="搜尋 SKU ID / 品牌 / 產品名稱..." onkeyup="filterSalesTable()"></div></div>';
+        }
+
+        filterHtml += '<div class="col-auto"><span id="tableFilterCount" class="text-muted small"></span></div>';
+        filterHtml += '</div>';
+
+        let html = filterHtml + '<div class="table-responsive mt-1"><table class="table table-sm table-hover" id="salesTableEl"><thead><tr>';
+        const isDateChart = chartName === 'gmvByDate';
+        const isMonthChart = chartName === 'gmvByMonth';
+        const isHourChart = chartName === 'gmvByHour';
+        const isDayOfWeekChart = chartName === 'gmvByDayOfWeek';
+        const isSimpleDateChart = !isSkuChart && !isBrandChart && (isDateChart || isMonthChart);
+        
+if (isSkuChart) html += '<th class="text-start">SKU ID</th><th class="text-start">Brand</th><th class="text-start">SKU Name (Chinese)</th><th class="text-end">' + (isQty ? 'Qty' : 'GMV') + '</th>';
+        else if (isBrandChart) html += '<th class="text-start">Brand</th><th class="text-end">' + (isQty ? 'Qty' : 'GMV') + '</th>';
+        else if (isSimpleDateChart) html += '<th class="text-start">' + (isDateChart ? '日期' : '月份') + '</th><th class="text-end">GMV</th>';
+        else if (isHourChart) html += '<th class="text-start">小時</th><th class="text-end">GMV</th>';
+        else if (isDayOfWeekChart) html += '<th class="text-start">星期</th><th class="text-end">GMV</th>';
+        else html += '<th class="text-start">日期</th><th class="text-end">GMV</th>';
+        html += '</tr></thead><tbody></tbody></table></div>';
+        container.innerHTML = html;
+
+        // Initial filter count
+        filterSalesTable();
+    }
+
+    // Filter table rows based on brand and keyword inputs (same pattern as Online SKU table)
+    function filterSalesTable() {
+        const brandFilter = document.getElementById('tableBrandFilter')?.value || '';
+        const keywordFilter = (document.getElementById('tableKeywordSearch')?.value || '').toLowerCase();
+        const tbody = document.querySelector('#salesTableEl tbody');
+        const tfoot = document.querySelector('#salesTableEl tfoot');
+        if (!tbody) return;
+
+        let visibleCount = 0;
+        let filteredTotal = 0;
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach(row => {
+            const brand = row.getAttribute('data-brand') || '';
+            const search = row.getAttribute('data-search') || '';
+            const valText = row.cells[ row.cells.length - 1 ]?.textContent || '';
+            const valMatch = valText.match(/[\d,]+\.?\d*/);
+            const val = valMatch ? parseFloat(valMatch[0].replace(/,/g, '')) : 0;
+
+            let show = true;
+            if (brandFilter && brand !== brandFilter) show = false;
+            if (keywordFilter && !search.includes(keywordFilter)) show = false;
+            row.style.display = show ? '' : 'none';
+            if (show) {
+                visibleCount++;
+                filteredTotal += val;
+            }
+        });
+
+        // Update count
+        const totalCount = rows.length;
+        const countEl = document.getElementById('tableFilterCount');
+        if (countEl) countEl.textContent = '顯示 ' + visibleCount + ' / ' + totalCount + ' 項';
+
+        // Update tfoot total to show filtered total
+        if (tfoot) {
+            const isQty = currentSalesChart.toLowerCase().includes('qty');
+            const totalLabel = isQty ? filteredTotal.toLocaleString() + ' 件' : '$' + filteredTotal.toLocaleString(undefined, {minimumFractionDigits: 2});
+            const cells = tfoot.querySelectorAll('td');
+            if (cells.length > 0) cells[cells.length - 1].textContent = totalLabel;
+        }
+    }
+
+    function renderMoMComparison(data) {
+        const container = document.getElementById('salesTableContainer');
+        if (!container) return;
+        
+        // data.labels = ["2026-06", "2026-05", ...], data.data = [26712.6, 12345.0, ...]
+        // Sort by date descending
+        const sorted = (data.labels || []).map((label, idx) => ({ label, value: data.data[idx] || 0 }))
+            .sort((a, b) => b.label.localeCompare(a.label));
+        
+        if (sorted.length < 2) {
+            // Not enough data for MoM comparison
+            return;
+        }
+        
+        const thisMonth = sorted[0];
+        const lastMonth = sorted[1];
+        const diff = thisMonth.value - lastMonth.value;
+        const pctChange = lastMonth.value !== 0 ? (diff / lastMonth.value * 100) : 0;
+        const isUp = diff >= 0;
+        const arrow = isUp ? '▲' : '▼';
+        const colorClass = isUp ? 'text-success' : 'text-danger';
+        
+        const momHtml = '<div class="mt-4"><h6>月環比 (MoM)</h6><div class="table-responsive"><table class="table table-sm table-hover"><thead><tr><th>月份</th><th class="text-end">GMV (HKD)</th><th class="text-end">變動</th><th class="text-end">百分比</th></tr></thead><tbody></tbody></table></div></div>';
+        
+        container.innerHTML += momHtml;
+    }
+
+    function renderSalesLegend(config, data) {
+        const legendEl = document.getElementById('salesLegend');
+        if (legendEl) legendEl.innerHTML = '';
+    }
+
+    function updateSalesSummary() {
+        const summary = salesSummary || {};
+        // Helper to format month label like "JUL 2026"
+        const formatMonthLabel = (monthStr) => {
+            if (!monthStr) return '---';
+            const [year, month] = monthStr.split('-');
+            const monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+            const m = parseInt(month, 10);
+            return monthNames[m - 1] + ' ' + year;
+        };
+        // Update month labels
+        const labelEl = document.getElementById('stThisMonthLabel');
+        if (labelEl) labelEl.textContent = '當月 (' + formatMonthLabel(summary.thisMonth?.label) + ')';
+        const labelEl2 = document.getElementById('stLastMonthLabel');
+        if (labelEl2) labelEl2.textContent = '上月 (' + formatMonthLabel(summary.lastMonth?.label) + ')';
+        // This month (current month)
+        const el = document.getElementById('stTotalGMV');
+        if (el) el.textContent = (summary.thisMonth?.gmv || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
+        const el2 = document.getElementById('stTotalOrders');
+        if (el2) el2.textContent = summary.thisMonth?.orders || 0;
+        const el3 = document.getElementById('stAvgGMV');
+        if (el3) el3.textContent = (summary.thisMonth?.avg || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
+        // Last month
+        const el4 = document.getElementById('stLastGMV');
+        if (el4) el4.textContent = (summary.lastMonth?.gmv || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
+        const el5 = document.getElementById('stLastOrders');
+        if (el5) el5.textContent = summary.lastMonth?.orders || 0;
+        const el6 = document.getElementById('stLastAvg');
+        if (el6) el6.textContent = (summary.lastMonth?.avg || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
+        // Month before last
+        const labelEl3 = document.getElementById('stMonthBeforeLastLabel');
+        if (labelEl3) labelEl3.textContent = '上上月 (' + formatMonthLabel(summary.monthBeforeLast?.label) + ')';
+        const el7 = document.getElementById('stMonthBeforeLastGMV');
+        if (el7) el7.textContent = (summary.monthBeforeLast?.gmv || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
+        const el8 = document.getElementById('stMonthBeforeLastOrders');
+        if (el8) el8.textContent = summary.monthBeforeLast?.orders || 0;
+        const el9 = document.getElementById('stMonthBeforeLastAvg');
+        if (el9) el9.textContent = (summary.monthBeforeLast?.avg || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        populateSalesFilters();
+        setTimeout(() => switchSalesChart('gmvByDate', document.querySelector('#salesChartNav .jp-btn')), 100);
+
+        // Fix: Re-render chart when Sales Trend tab is shown
+        // Chart.js cannot measure container size when tab is hidden (0x0 canvas)
+        document.querySelector('#salestrend').addEventListener('shown.bs.tab', function() {
+            // Re-render chart with current chart type to get proper dimensions
+            const activeBtn = document.querySelector('#salesChartNav .jp-btn.active');
+            if (activeBtn) {
+                const chartName = activeBtn.getAttribute('onclick').match(/'([^']+)'/)[1];
+                switchSalesChart(chartName, activeBtn);
+            }
+        });
+    }
+);
+    </script>
+    
+    
+<script>
+    // ========== SKECHERS Official Price Comparison (H8391001 format) ==========
+    // Loads data/price_check_data.json (built by build_price_check.py)
+    let priceCheckData = [];
+    function fmtPrice(v) {
+        if (v === null || v === undefined || isNaN(v)) return '<span class="text-muted">—</span>';
+        return '$' + v.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+    // PSP price history for 走向 (trend) column — click shows popup line chart
+    let pspHistory = {};
+    let trendChart = null;
+    let trendPopupTimer = null;
+    let trendPopupSku = null;  // which SKU the popup is currently showing (for toggle)
+
+    function trendCell(sku) {
+        const hist = pspHistory[sku];
+        const dates = hist ? Object.keys(hist).sort() : [];
+        if (!dates.length) return '<span class="text-muted">—</span>';
+        // Button: click opens popup chart with daily price history (PSP preferred, RSP fallback)
+        return '<button type="button" class="btn btn-sm btn-outline-primary trend-btn" '
+            + 'data-sku="' + sku + '" '
+            + 'onclick="showTrendPopup(\'' + sku + '\', this)" '
+            + 'title="每日價格動向 — 撳掣睇折線圖 (PSP 冇數用 RSP)">'
+            + '<span class="fw-bold">價格動向</span></button>';
+    }
+
+    function showTrendPopup(sku, el) {
+        const hist = pspHistory[sku];
+        if (!hist) return;
+        const dates = Object.keys(hist).sort();
+        if (!dates.length) return;
+        // Toggle: clicking the SAME SKU's button again closes the popup
+        const popupEl = document.getElementById('trendPopup');
+        if (trendPopupSku === sku && popupEl && popupEl.style.display === 'block') {
+            hideTrendPopup();
+            return;
+        }
+        hideTrendPopup();
+        const popup = document.getElementById('trendPopup');
+        const canvas = document.getElementById('trendPopupChart');
+        const titleEl = document.getElementById('trendPopupTitle');
+        titleEl.textContent = sku.replace('P0122001_S_', '') + ' — 每日價格動向 (PSP 冇數用 RSP)';
+        // Build chart data
+        const labels = dates;
+        const data = dates.map(d => hist[d]);
+        // Robust cleanup: destroy any existing chart bound to this canvas
+        try {
+            const existing = Chart.getChart(canvas);
+            if (existing) existing.destroy();
+        } catch (e) { /* chart registry not available */ }
+        if (trendChart) { trendChart.destroy(); trendChart = null; }
+        trendChart = new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '價格 ($)',
+                    data: data,
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13,110,253,0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#0d6efd'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) { return '價格: $' + ctx.parsed.y.toFixed(2); }
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: false, ticks: { callback: function(v) { return '$' + v; } } },
+                    x: { ticks: { maxRotation: 45, font: { size: 10 } } }
+                }
+            }
+        });
+        // Position popup near the cell
+        const rect = el.getBoundingClientRect();
+        popup.style.display = 'block';
+        popup.style.left = Math.min(rect.left, window.innerWidth - 340) + 'px';
+        popup.style.top = (rect.bottom + 8) + 'px';
+        trendPopupSku = sku;  // remember which SKU opened it (for toggle-close)
+    }
+
+    function hideTrendPopup() {
+        const popup = document.getElementById('trendPopup');
+        if (popup) popup.style.display = 'none';
+        if (trendChart) { trendChart.destroy(); trendChart = null; }
+        trendPopupSku = null;
+    }
+
+    function fmtDiff(d, comparePrice, psp, rsp, officialPrice) {
+        // Returns {amount, emoji, text} for 差價 / 走向 / 變動
+        const title = '比較基準: ' + (comparePrice !== null && comparePrice !== undefined && !isNaN(comparePrice) ? '$' + comparePrice.toFixed(2) : '—') + ' vs 官網 $' + (officialPrice !== undefined && officialPrice !== null && !isNaN(officialPrice) ? officialPrice.toFixed(2) : '—');
+        if (d === null || d === undefined || isNaN(d)) {
+            return { amount: '<span class="text-muted">—</span>', emoji: '<span class="text-muted">—</span>', text: '<span class="text-muted">暫無數據</span>' };
+        }
+        const sign = d > 0 ? '+' : '';
+        if (d === 0) {
+            return { amount: '<span class="text-muted" title="' + title + '">$0.00</span>', emoji: '<span class="text-muted" title="' + title + '">➖</span>', text: '<span class="text-muted" title="' + title + '">無變動</span>' };
+        }
+        if (d > 0) {
+            return { amount: '<span class="text-danger" title="' + title + '">' + sign + '$' + d.toFixed(2) + '</span>', emoji: '<span class="text-danger" title="' + title + '">😡</span>', text: '<span class="text-danger fw-bold" title="' + title + '">😡 價格上升</span>' };
+        }
+        return { amount: '<span class="text-success" title="' + title + '">' + sign + '$' + d.toFixed(2) + '</span>', emoji: '<span class="text-success" title="' + title + '">😍</span>', text: '<span class="text-success fw-bold" title="' + title + '">😍 價格下跌</span>' };
+    }
+    function renderPriceCheck() {
+        const tbody = document.getElementById('tablePrice');
+        if (!tbody) return;
+        if (!priceCheckData.length) {
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">暫無 Price Check 數據</td></tr>';
+            return;
+        }
+        const brandSel = document.getElementById('filterPriceBrand');
+        if (brandSel) {
+            const brands = [...new Set(priceCheckData.map(r => r.brand).filter(Boolean))].sort();
+            brandSel.innerHTML = '<option value="all">全部品牌</option>' + brands.map(b => '<option value="' + b + '">' + b + '</option>').join('');
+        }
+        tbody.innerHTML = priceCheckData.map(r => {
+            const name = r.name_chi || r.name_en || '';
+            const off = r.official_price !== null && r.official_price !== undefined;
+            const offCell = off
+                ? '<a href="' + r.official_url + '" target="_blank" class="text-decoration-none fw-bold" title="' + (r.official_name || '') + '">' + fmtPrice(r.official_price) + '</a>'
+                : '<span class="text-muted">—</span>';
+            const dc = fmtDiff(r.diff, r.compare_price, r.psp, r.rsp, r.official_price);
+            // Price delta category for filter: up / down / flat / none
+            let pricedelta = 'none';
+            if (r.official_price !== null && r.official_price !== undefined && r.diff !== null && r.diff !== undefined && !isNaN(r.diff)) {
+                if (r.diff > 0) pricedelta = 'up';
+                else if (r.diff < 0) pricedelta = 'down';
+                else pricedelta = 'flat';
+            }
+            const skuLink = '<a href="https://www.hktvmall.com/hktv/p/' + r.link_sku + '" target="_blank"><code>' + r.sku + '</code></a>';
+            return '<tr data-brand="' + (r.brand || '') + '" data-pricedelta="' + pricedelta + '">'
+                + '<td>' + skuLink + '</td>'
+                + '<td>' + (r.brand || '—') + '</td>'
+                + '<td title="' + name + '">' + (name.length > 50 ? name.slice(0, 50) + '…' : name) + '</td>'
+                + '<td class="text-end">' + fmtPrice(r.rsp) + '</td>'
+                + '<td class="text-end">' + fmtPrice(r.psp) + '</td>'
+                + '<td class="text-end fw-bold">' + offCell + '</td>'
+                + '<td class="text-end">' + dc.amount + '</td>'
+                + '<td class="text-center">' + trendCell(r.sku) + '</td>'
+                + '<td class="text-center">' + dc.text + '</td>'
+                + '<td class="text-muted">' + (r.status || '') + '</td>'
+                + '</tr>';
+        }).join('');
+        const matched = priceCheckData.filter(r => r.official_price !== null && r.official_price !== undefined).length;
+        const tab = document.querySelector('[data-bs-target="#pricecheck"]');
+        if (tab) tab.textContent = '💰 Price Check (' + priceCheckData.length + ')';
+        // Update subtitle: how many have official comparison
+        const sub = document.getElementById('priceCheckSub');
+        if (sub) sub.textContent = '全部 ' + priceCheckData.length + ' SKUs（跟庫存報表）· ' + matched + ' 個有 SKECHERS 官網對比';
+        // Update price change summary counts (emoji legend)
+        let nUp = 0, nDown = 0, nFlat = 0, nNoData = 0;
+        priceCheckData.forEach(r => {
+            const d = r.diff;
+            if (r.official_price === null || r.official_price === undefined || d === null || d === undefined || isNaN(d)) {
+                nNoData++;
+            } else if (d === 0) {
+                nFlat++;
+            } else if (d > 0) {
+                nUp++;
+            } else {
+                nDown++;
+            }
+        });
+        const setCount = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = n; };
+        setCount('pcUpCount', nUp);
+        setCount('pcDownCount', nDown);
+        setCount('pcFlatCount', nFlat);
+        setCount('pcNoDataCount', nNoData);
+    }
+    async function loadPriceCheck() {
+        try {
+            const res = await fetch('data/price_check_data.json?' + Date.now());
+            priceCheckData = await res.json();
+        } catch (e) {
+            console.error('loadPriceCheck failed', e);
+            priceCheckData = [];
+        }
+        renderPriceCheck();
+    }
+
+    async function loadPspHistory() {
+        try {
+            const res = await fetch('data/psp_history.json?' + Date.now());
+            pspHistory = await res.json();
+        } catch (e) {
+            console.error('loadPspHistory failed', e);
+            pspHistory = {};
+        }
+        // Re-render so 走向 column shows trend links (history may have loaded after first render)
+        renderPriceCheck();
+    }
+    loadPspHistory();
+    loadPriceCheck();
+    </script>
+
+    <!-- Trend popup (PSP price line chart) -->
+    <div id="trendPopup" style="display:none;position:fixed;z-index:1080;width:320px;background:#fff;border:1px solid #dee2e6;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.15);padding:10px;">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <strong id="trendPopupTitle" style="font-size:0.85rem;"></strong>
+            <button type="button" class="btn-close btn-close-sm" style="font-size:0.6rem;" onclick="hideTrendPopup()"></button>
+        </div>
+        <div style="height:160px;"><canvas id="trendPopupChart"></canvas></div>
+        <small class="text-muted">💡 hover 更多日期會顯示走勢</small>
+    </div>
+
+<script>
+    // ========== P0122001 Inventory Data (JS-driven, style-level) ==========
+    let invData = {styles: [], counts: {}};
+    const badgeMap = {
+        zero: '<span class="badge badge-zero">🚫 Zero (0)</span>',
+        low: '<span class="badge badge-low">⚠️ Low (1-9)</span>',
+        normal: '<span class="badge badge-normal">🟢 Normal (10-49)</span>',
+        high: '<span class="badge badge-high">🔵 High (50+)</span>'
+    };
+    function invRow(e) {
+        const name = e.name_chi || e.name_en || '';
+        const link = e.link_sku ? e.link_sku : e.sku;
+        return '<tr data-brand="' + (e.brand || '') + '" onclick="showDetail(\'' + e.sku + '\',\'' + name.replace(/'/g, "\\'") + '\',' + e.stock + ',\'' + e.status + '\')">'
+            + '<td><a href="https://www.hktvmall.com/hktv/p/' + link + '" target="_blank" onclick="event.stopPropagation()"><code>' + e.sku + '</code></a></td>'
+            + '<td title="' + name + '">' + (name.length > 60 ? name.slice(0, 60) + '…' : name) + '</td>'
+            + '<td class="text-end">' + e.stock.toLocaleString() + '</td>'
+            + '<td>' + badgeMap[e.status] + '</td>'
+            + '<td class="text-muted" style="font-size:0.75rem">' + (e.brand || '') + '</td>'
+            + '</tr>';
+    }
+    function invRowMini(e, withBrand) {
+        const name = e.name_chi || e.name_en || '';
+        const link = e.link_sku ? e.link_sku : e.sku;
+        let out = '<tr data-brand="' + (e.brand || '') + '" onclick="showDetail(\'' + e.sku + '\',\'' + name.replace(/'/g, "\\'") + '\',' + e.stock + ',\'' + e.status + '\')">'
+            + '<td><a href="https://www.hktvmall.com/hktv/p/' + link + '" target="_blank" onclick="event.stopPropagation()"><code>' + e.sku + '</code></a></td>'
+            + '<td title="' + name + '">' + (name.length > 40 ? name.slice(0, 40) + '…' : name) + '</td>'
+            + '<td class="text-end">' + e.stock.toLocaleString() + '</td>'
+            + '<td>' + badgeMap[e.status] + '</td>';
+        if (withBrand) out += '<td class="text-muted" style="font-size:0.75rem">' + (e.brand || '') + '</td>';
+        out += '</tr>';
+        return out;
+    }
+    function renderInventory() {
+        const c = invData.counts || {};
+        // KPI cards
+        const kpiMap = {
+            0: 'kpiTotal', 1: 'kpiStock', 2: 'kpiZero', 3: 'kpiLow', 4: 'kpiNormal', 5: 'kpiHigh'
+        };
+        // KPI values are divs with kpi-value class in order; patch by index via querySelectorAll
+        const kpiVals = document.querySelectorAll('.kpi-value');
+        if (kpiVals.length >= 6) {
+            kpiVals[0].textContent = (c.total || 0).toLocaleString();
+            kpiVals[1].textContent = (c.total_stock || 0).toLocaleString();
+            kpiVals[2].textContent = (c.zero || 0).toLocaleString();
+            kpiVals[3].textContent = (c.low || 0).toLocaleString();
+            kpiVals[4].textContent = (c.normal || 0).toLocaleString();
+            kpiVals[5].textContent = (c.high || 0).toLocaleString();
+        }
+        // Tab labels
+        const setTab = (sel, label) => { const t = document.querySelector(sel); if (t) t.textContent = label; };
+        setTab('[data-bs-target="#all"]', '📋 All (' + (c.total || 0) + ')');
+        setTab('[data-bs-target="#skuid"]', '🔢 By Online SKU (' + (c.online || 0) + ')');
+        setTab('[data-bs-target="#brand"]', '🏷️ Brand (' + (Object.keys(invData.brands || {}).length) + ')');
+        setTab('[data-bs-target="#alerts"]', '⚠️ Alerts (' + ((c.zero || 0) + (c.low || 0)) + ')');
+        setTab('[data-bs-target="#newsku"]', '🆕 New SKU (' + (c.new || 0) + ')');
+        setTab('[data-bs-target="#pricecheck"]', '💰 Price Check (' + (c.online || 0) + ')');
+        // tableAll
+        const ta = document.getElementById('tableAll');
+        if (ta) ta.innerHTML = invData.styles.map(invRow).join('');
+        // tableSku (online only)
+        const ts = document.getElementById('tableSku');
+        if (ts) ts.innerHTML = invData.styles.filter(e => e.online).map(invRow).join('');
+        // Brand dropdowns (all + sku + newsku)
+        const brands = Object.keys(invData.brands || {}).sort();
+        const fillBrandSel = (id) => {
+            const sel = document.getElementById(id);
+            if (!sel) return;
+            const cur = sel.value;
+            sel.innerHTML = '<option value="all">All Brands</option>' + brands.map(b => '<option value="' + b + '">' + b + '</option>').join('');
+            if (brands.includes(cur)) sel.value = cur;
+        };
+        fillBrandSel('brandAll'); fillBrandSel('brandSku'); fillBrandSel('brandNewSku');
+        // Brand table (first tbody in #brand pane)
+        const brandPane = document.getElementById('brand');
+        if (brandPane) {
+            const bt = brandPane.querySelector('tbody');
+            if (bt) {
+                bt.innerHTML = brands.map(b => {
+                    const info = invData.brands[b];
+                    return '<tr><td><strong>' + b + '</strong></td><td class="text-center">' + info.count + '</td><td class="text-end">' + info.stock.toLocaleString() + '</td>'
+                        + '<td><a href="https://www.hktvmall.com/hktv/en/search?q=' + encodeURIComponent(b) + '" target="_blank">' + b + '</a></td></tr>';
+                }).join('');
+            }
+        }
+        // Category tables
+        renderCategories();
+        // SKU Status panes
+        renderSkuStatus();
+        // Alerts
+        renderAlerts();
+        // New SKU table
+        renderNewSku();
+        // header date
+        const id = document.getElementById('invReportDate');
+        if (id) id.textContent = invData.report_date || '—';
+    }
+    function renderCategories() {
+        const catType = {}, catFull = {};
+        invData.styles.forEach(e => {
+            const type = e.category ? e.category.slice(0, 2) : '';
+            const full = e.category || '';
+            const typeName = e.category_name || '';
+            // type level: code = 2-char prefix
+            const t = catType[type] || (catType[type] = {name: typeName, code: type, count: 0, stock: 0, zero: 0, low: 0});
+            t.count++; t.stock += e.stock;
+            if (e.status === 'zero') t.zero++;
+            if (e.status === 'low') t.low++;
+            const f = catFull[full] || (catFull[full] = {name: typeName, code: full, count: 0, stock: 0, zero: 0, low: 0});
+            f.count++; f.stock += e.stock;
+            if (e.status === 'zero') f.zero++;
+            if (e.status === 'low') f.low++;
+        });
+        const typeBody = document.getElementById('categoryTypeBody');
+        const fullBody = document.getElementById('categoryFullBody');
+        const catRow = (c) => '<tr data-online="" data-invisible="" data-foos=""><td>' + (c.name || '') + '</td><td><code>' + c.code + '</code></td>'
+            + '<td class="text-center">' + c.count + '</td><td class="text-end">' + c.stock.toLocaleString() + '</td>'
+            + '<td class="text-center text-danger">' + c.zero + '</td><td class="text-center text-warning">' + c.low + '</td></tr>';
+        if (typeBody) typeBody.innerHTML = Object.values(catType).map(catRow).join('');
+        if (fullBody) fullBody.innerHTML = Object.values(catFull).map(catRow).join('');
+        const cc = document.getElementById('categoryCount');
+        if (cc) cc.textContent = Object.keys(catType).length + ' category types';
+    }
+    function renderSkuStatus() {
+        const c = invData.counts || {};
+        const online = invData.styles.filter(e => e.online);
+        const invis = invData.styles.filter(e => e.invisible);
+        const foos = invData.styles.filter(e => e.foos);
+        const pane = document.getElementById('skustatus');
+        if (!pane) return;
+        const tbodies = pane.querySelectorAll('tbody');
+        if (tbodies.length >= 3) {
+            tbodies[0].innerHTML = online.map(e => invRowMini(e, false)).join('');
+            tbodies[1].innerHTML = invis.map(e => invRowMini(e, false)).join('');
+            tbodies[2].innerHTML = foos.map(e => invRowMini(e, false)).join('');
+        }
+        // card headers
+        const spans = pane.querySelectorAll('span.text-dark');
+        if (spans.length >= 3) {
+            spans[0].textContent = (c.online || 0) + ' online / ' + ((c.total || 0) - (c.online || 0)) + ' offline';
+            spans[1].textContent = (c.invisible || 0) + ' Y / ' + ((c.total || 0) - (c.invisible || 0)) + ' N';
+            spans[2].textContent = (c.foos || 0) + ' Y / ' + ((c.total || 0) - (c.foos || 0)) + ' N';
+        }
+    }
+    function renderAlerts() {
+        const zero = invData.styles.filter(e => e.status === 'zero');
+        const low = invData.styles.filter(e => e.status === 'low');
+        const pane = document.getElementById('alerts');
+        if (!pane) return;
+        const tbodies = pane.querySelectorAll('tbody');
+        if (tbodies.length >= 2) {
+            tbodies[0].innerHTML = zero.map(e => invRowMini(e, false)).join('');
+            tbodies[1].innerHTML = low.map(e => invRowMini(e, false)).join('');
+        }
+        // headers
+        const hdrs = pane.querySelectorAll('.card-header');
+        if (hdrs.length >= 2) {
+            hdrs[0].innerHTML = '🚫 Zero Stock (' + zero.length + ')';
+            hdrs[1].innerHTML = '⚠️ Low Stock (' + low.length + ')';
+        }
+    }
+    function renderNewSku() {
+        const nw = invData.styles.filter(e => e.is_new);
+        const tbody = document.getElementById('tableNewSku');
+        if (tbody) tbody.innerHTML = nw.map(invRow).join('');
+        const cnt = document.querySelector('[data-bs-target="#newsku"]');
+        if (cnt) cnt.textContent = '🆕 New SKU (' + nw.length + ')';
+        updateNewSkuBrands();
+    }
+    async function loadInventory() {
+        try {
+            const res = await fetch('data/inventory_data.json?' + Date.now());
+            invData = await res.json();
+            // build brands map
+            const brands = {};
+            invData.styles.forEach(e => {
+                const b = e.brand || 'Unknown';
+                const x = brands[b] || (brands[b] = {count: 0, stock: 0});
+                x.count++; x.stock += e.stock;
+            });
+            invData.brands = brands;
+        } catch (e) {
+            console.error('loadInventory failed', e);
+            invData = {styles: [], counts: {}};
+        }
+        renderInventory();
+    }
+    loadInventory();
+    </script>
+
 </body>
 </html>

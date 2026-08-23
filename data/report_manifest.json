@@ -1,0 +1,13 @@
+{
+ "inventory_reports": [
+  {
+   "date": "2026-08-21",
+   "time": "1200",
+   "skus": 40436,
+   "file": "inventory_report_20260821_1200.csv",
+   "size": 12252314
+  }
+ ],
+ "order_reports": [],
+ "updated_at": "2026-08-24 01:38:40"
+}

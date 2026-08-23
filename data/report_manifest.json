@@ -8,6 +8,14 @@
    "size": 12252314
   }
  ],
- "order_reports": [],
- "updated_at": "2026-08-24 01:38:40"
+ "order_reports": [
+  {
+   "date": "2026-08-23",
+   "time": "235959",
+   "gmv": null,
+   "file": "ECOM-MMSNG_DAILY_ORDER_P0122001_20260823235959.xlsx",
+   "size": 33284
+  }
+ ],
+ "updated_at": "2026-08-24 01:47:32"
 }

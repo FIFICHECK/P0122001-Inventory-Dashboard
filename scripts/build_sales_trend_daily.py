@@ -93,7 +93,8 @@ sku_totals = defaultdict(float)
 for d, m2 in gmv_by_sku.items():
     for s, v in m2.items():
         sku_totals[s] += v
-top_skus = [s for s, _ in sorted(sku_totals.items(), key=lambda x: -x[1])[:100]]
+# All SKUs (no display limit — user preference)
+top_skus = [s for s, _ in sorted(sku_totals.items(), key=lambda x: -x[1])]
 sd['gmv_by_sku_daily'] = {'labels': DATE_KEYS, 'skus': top_skus,
                           'data': [[round(gmv_by_sku[d].get(s, 0), 2) for s in top_skus] for d in DATE_KEYS]}
 sd['qty_by_sku_daily'] = {'labels': DATE_KEYS, 'skus': top_skus,

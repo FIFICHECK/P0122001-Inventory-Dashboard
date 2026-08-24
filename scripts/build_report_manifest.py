@@ -52,7 +52,8 @@ def parse_order_file(name):
         except Exception:
             gmv = None
         path = os.path.join('reports/order_reports', name)
-        return {'date': date, 'time': '235959', 'gmv': round(float(gmv), 2) if isinstance(gmv, (int, float)) else None,
+        return {'date': date, 'date_label': f"{y}-{mo}月全月", 'time': '235959',
+                'gmv': round(float(gmv), 2) if isinstance(gmv, (int, float)) else None,
                 'file': name, 'size': os.path.getsize(path)}
     return None
 

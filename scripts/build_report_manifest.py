@@ -55,14 +55,26 @@ for f in sorted(glob.glob('reports/order_reports/*.xlsx') + glob.glob('reports/o
         order.append(e)
 order.sort(key=lambda x: (x['date'], x['time']), reverse=True)
 
+# GMV by SKU By Month report (GP Report export)
+gmv_reports = []
+for f in sorted(glob.glob('reports/P0122001_GMV_By_SKU_By_Month_*.xlsx')):
+    name = os.path.basename(f)
+    m = re.match(r'P0122001_GMV_By_SKU_By_Month_(\d{6})-(\d{6})\.xlsx$', name)
+    period = f"{m.group(1)[:4]}-{m.group(1)[4:6]} 至 {m.group(2)[:4]}-{m.group(2)[4:6]}" if m else '—'
+    gmv_reports.append({'period': period, 'file': name, 'size': os.path.getsize(f)})
+gmv_reports.sort(key=lambda x: x['period'], reverse=True)
+
 out = {
     'inventory_reports': inventory,
     'order_reports': order,
+    'gmv_reports': gmv_reports,
     'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
 }
 json.dump(out, open('data/report_manifest.json', 'w'), ensure_ascii=False, indent=1)
-print("inventory reports:", len(inventory), "| order reports:", len(order))
+print("inventory reports:", len(inventory), "| order reports:", len(order), "| gmv reports:", len(gmv_reports))
 for e in inventory[:3]:
     print("  inv:", e['date'], e['time'], e['skus'], 'SKUs')
 for e in order[:3]:
     print("  ord:", e['date'], e['time'], e['size'], 'bytes')
+for e in gmv_reports:
+    print("  gmv:", e['period'], e['size'], 'bytes')

@@ -115,6 +115,10 @@ if DATE_KEYS:
     summ['daily_orders_total'] = int(sum(orders_by_date.values()))
     summ['daily_qty_total'] = int(sum(qty_by_date.values()))
     summ['avg_order_value_daily'] = round(summ['daily_gmv_total'] / summ['daily_orders_total'], 2) if summ['daily_orders_total'] else 0
+    # this_month: GP Excel has no Aug orders — fill from daily reports (7 days available)
+    if summ.get('this_month') and summ['this_month'].get('orders', 0) == 0:
+        summ['this_month']['orders'] = summ['daily_orders_total']
+        summ['this_month']['avg'] = summ['avg_order_value_daily']
 
 # available_months: add the daily dates' month if missing (2026-08 already there)
 for d in DATE_KEYS:

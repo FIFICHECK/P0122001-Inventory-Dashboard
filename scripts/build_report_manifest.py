@@ -34,12 +34,27 @@ def parse_order_file(name):
     m = re.match(r'ECOM-MMSNG_DAILY_ORDER_P0122001_(\d{8})(\d{6})\.xlsx$', name)
     if not m:
         m = re.match(r'ECOM-MMSNG_DAILY_ORDER_P0122001_(\d{8})(\d{6})\.xls$', name)
-    if not m:
-        return None
-    date_raw, time_raw = m.group(1), m.group(2)
-    date = f"{date_raw[:4]}-{date_raw[4:6]}-{date_raw[6:8]}"
-    path = os.path.join('reports/order_reports', name)
-    return {'date': date, 'time': time_raw, 'gmv': None, 'file': name, 'size': os.path.getsize(path)}
+    if m:
+        date_raw, time_raw = m.group(1), m.group(2)
+        date = f"{date_raw[:4]}-{date_raw[4:6]}-{date_raw[6:8]}"
+        path = os.path.join('reports/order_reports', name)
+        return {'date': date, 'time': time_raw, 'gmv': None, 'file': name, 'size': os.path.getsize(path)}
+    # Monthly GMV reports (split from GP Report Excel): P0122001_GMV_Monthly_YYYYMM.xlsx
+    m2 = re.match(r'P0122001_GMV_Monthly_(\d{6})\.xlsx$', name)
+    if m2:
+        y, mo = m2.group(1)[:4], m2.group(1)[4:6]
+        date = f"{y}-{mo}-01"
+        # GMV total from sidecar JSON (written by split_gmv_monthly.py; system python3 lacks openpyxl)
+        gmv = None
+        try:
+            gmv_map = json.load(open('data/gmv_monthly_totals.json', encoding='utf-8'))
+            gmv = gmv_map.get(m2.group(1))
+        except Exception:
+            gmv = None
+        path = os.path.join('reports/order_reports', name)
+        return {'date': date, 'time': '235959', 'gmv': round(float(gmv), 2) if isinstance(gmv, (int, float)) else None,
+                'file': name, 'size': os.path.getsize(path)}
+    return None
 
 inventory = []
 for f in sorted(glob.glob('reports/inventory_report_*.csv')):
@@ -55,26 +70,14 @@ for f in sorted(glob.glob('reports/order_reports/*.xlsx') + glob.glob('reports/o
         order.append(e)
 order.sort(key=lambda x: (x['date'], x['time']), reverse=True)
 
-# GMV by SKU By Month report (GP Report export)
-gmv_reports = []
-for f in sorted(glob.glob('reports/P0122001_GMV_By_SKU_By_Month_*.xlsx')):
-    name = os.path.basename(f)
-    m = re.match(r'P0122001_GMV_By_SKU_By_Month_(\d{6})-(\d{6})\.xlsx$', name)
-    period = f"{m.group(1)[:4]}-{m.group(1)[4:6]} 至 {m.group(2)[:4]}-{m.group(2)[4:6]}" if m else '—'
-    gmv_reports.append({'period': period, 'file': name, 'size': os.path.getsize(f)})
-gmv_reports.sort(key=lambda x: x['period'], reverse=True)
-
 out = {
     'inventory_reports': inventory,
     'order_reports': order,
-    'gmv_reports': gmv_reports,
     'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
 }
 json.dump(out, open('data/report_manifest.json', 'w'), ensure_ascii=False, indent=1)
-print("inventory reports:", len(inventory), "| order reports:", len(order), "| gmv reports:", len(gmv_reports))
+print("inventory reports:", len(inventory), "| order reports:", len(order))
 for e in inventory[:3]:
     print("  inv:", e['date'], e['time'], e['skus'], 'SKUs')
-for e in order[:3]:
-    print("  ord:", e['date'], e['time'], e['size'], 'bytes')
-for e in gmv_reports:
-    print("  gmv:", e['period'], e['size'], 'bytes')
+for e in order[:10]:
+    print("  ord:", e['date'], e['time'], e['gmv'], e['size'], 'bytes', e['file'][:60])

@@ -15,14 +15,56 @@
    "gmv": null,
    "file": "ECOM-MMSNG_DAILY_ORDER_P0122001_20260823235959.xlsx",
    "size": 33284
-  }
- ],
- "gmv_reports": [
+  },
   {
-   "period": "2026-01 至 2026-07",
-   "file": "P0122001_GMV_By_SKU_By_Month_202601-202607.xlsx",
-   "size": 482207
+   "date": "2026-07-01",
+   "time": "235959",
+   "gmv": 534792.0,
+   "file": "P0122001_GMV_Monthly_202607.xlsx",
+   "size": 66215
+  },
+  {
+   "date": "2026-06-01",
+   "time": "235959",
+   "gmv": 681973.0,
+   "file": "P0122001_GMV_Monthly_202606.xlsx",
+   "size": 65376
+  },
+  {
+   "date": "2026-05-01",
+   "time": "235959",
+   "gmv": 1830103.0,
+   "file": "P0122001_GMV_Monthly_202605.xlsx",
+   "size": 114450
+  },
+  {
+   "date": "2026-04-01",
+   "time": "235959",
+   "gmv": 715057.0,
+   "file": "P0122001_GMV_Monthly_202604.xlsx",
+   "size": 78788
+  },
+  {
+   "date": "2026-03-01",
+   "time": "235959",
+   "gmv": 513790.0,
+   "file": "P0122001_GMV_Monthly_202603.xlsx",
+   "size": 60317
+  },
+  {
+   "date": "2026-02-01",
+   "time": "235959",
+   "gmv": 1164617.0,
+   "file": "P0122001_GMV_Monthly_202602.xlsx",
+   "size": 88696
+  },
+  {
+   "date": "2026-01-01",
+   "time": "235959",
+   "gmv": 992300.0,
+   "file": "P0122001_GMV_Monthly_202601.xlsx",
+   "size": 81714
   }
  ],
- "updated_at": "2026-08-24 09:19:19"
+ "updated_at": "2026-08-24 09:37:23"
 }

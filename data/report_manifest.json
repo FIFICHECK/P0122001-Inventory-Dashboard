@@ -12,9 +12,51 @@
   {
    "date": "2026-08-23",
    "time": "235959",
-   "gmv": null,
+   "gmv": 26180.2,
    "file": "ECOM-MMSNG_DAILY_ORDER_P0122001_20260823235959.xlsx",
    "size": 33284
+  },
+  {
+   "date": "2026-08-22",
+   "time": "235959",
+   "gmv": 22263.8,
+   "file": "ECOM-MMSNG_DAILY_ORDER_P0122001_20260822235959.xlsx",
+   "size": 28226
+  },
+  {
+   "date": "2026-08-21",
+   "time": "235959",
+   "gmv": 26437.8,
+   "file": "ECOM-MMSNG_DAILY_ORDER_P0122001_20260821235959.xlsx",
+   "size": 34680
+  },
+  {
+   "date": "2026-08-20",
+   "time": "235959",
+   "gmv": 14179.0,
+   "file": "ECOM-MMSNG_DAILY_ORDER_P0122001_20260820235959.xlsx",
+   "size": 21434
+  },
+  {
+   "date": "2026-08-19",
+   "time": "235959",
+   "gmv": 19485.2,
+   "file": "ECOM-MMSNG_DAILY_ORDER_P0122001_20260819235959.xlsx",
+   "size": 30076
+  },
+  {
+   "date": "2026-08-18",
+   "time": "235959",
+   "gmv": 13522.8,
+   "file": "ECOM-MMSNG_DAILY_ORDER_P0122001_20260818235959.xlsx",
+   "size": 19900
+  },
+  {
+   "date": "2026-08-17",
+   "time": "235959",
+   "gmv": 20737.8,
+   "file": "ECOM-MMSNG_DAILY_ORDER_P0122001_20260817235959.xlsx",
+   "size": 29245
   },
   {
    "date": "2026-07-01",
@@ -73,5 +115,5 @@
    "size": 81714
   }
  ],
- "updated_at": "2026-08-24 09:47:09"
+ "updated_at": "2026-08-24 09:55:21"
 }

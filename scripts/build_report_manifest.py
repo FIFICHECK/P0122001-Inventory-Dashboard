@@ -30,6 +30,32 @@ def parse_inventory_file(name):
         skus = 0
     return {'date': date, 'time': time_raw, 'skus': skus, 'file': name, 'size': os.path.getsize(path)}
 
+def read_daily_gmv(name):
+    """Read GMV from an ECOM daily order report xlsx (header F2 or sum col AA).
+    Uses openpyxl via python3.12 site-packages if available; returns None otherwise."""
+    try:
+        import openpyxl
+    except ImportError:
+        import sys as _sys
+        _sys.path.insert(0, '/home/snkwok/.local/lib/python3.12/site-packages')
+        try:
+            import openpyxl
+        except ImportError:
+            return None
+    try:
+        wb = openpyxl.load_workbook(os.path.join('reports/order_reports', name), data_only=True)
+        ws = wb.active
+        if ws is None:
+            return None
+        hdr = ws.cell(row=2, column=6).value
+        if isinstance(hdr, (int, float)):
+            return round(float(hdr), 2)
+        total = sum(ws.cell(row=r, column=27).value for r in range(5, ws.max_row + 1)
+                    if isinstance(ws.cell(row=r, column=27).value, (int, float)))
+        return round(total, 2) if total else None
+    except Exception:
+        return None
+
 def parse_order_file(name):
     m = re.match(r'ECOM-MMSNG_DAILY_ORDER_P0122001_(\d{8})(\d{6})\.xlsx$', name)
     if not m:
@@ -38,7 +64,8 @@ def parse_order_file(name):
         date_raw, time_raw = m.group(1), m.group(2)
         date = f"{date_raw[:4]}-{date_raw[4:6]}-{date_raw[6:8]}"
         path = os.path.join('reports/order_reports', name)
-        return {'date': date, 'time': time_raw, 'gmv': None, 'file': name, 'size': os.path.getsize(path)}
+        return {'date': date, 'time': time_raw, 'gmv': read_daily_gmv(name),
+                'file': name, 'size': os.path.getsize(path)}
     # Monthly GMV reports (split from GP Report Excel): P0122001_GMV_Monthly_YYYYMM.xlsx
     m2 = re.match(r'P0122001_GMV_Monthly_(\d{6})\.xlsx$', name)
     if m2:

@@ -54,18 +54,23 @@ def status_of(stock):
 def main():
     rows = load_rows()
     print("raw rows:", len(rows))
-    # report date from first row? No - from the CSV raw header. inventory_all.csv has no Date line.
-    # read from reports/ raw CSV
+    # report date: prefer MMS live meta (fetched today), else Exchange raw CSV
     report_date = ''
-    import glob
-    for f in sorted(glob.glob('reports/inventory_report_*.csv')):
-        head = open(f, encoding='utf-8-sig').read().split('\n')
-        for ln in head[:6]:
-            if ln.startswith('Date,'):
-                report_date = ln.split(',', 1)[1].strip()
+    import json as _json, os as _os
+    if _os.path.exists('data/inventory_mms_meta.json'):
+        _m = _json.load(open('data/inventory_mms_meta.json'))
+        if _m.get('source') == 'mms-api' and _m.get('fetched_at'):
+            report_date = _m['fetched_at'][:10]
+    if not report_date:
+        import glob
+        for f in sorted(glob.glob('reports/inventory_report_*.csv')):
+            head = open(f, encoding='utf-8-sig').read().split('\n')
+            for ln in head[:6]:
+                if ln.startswith('Date,'):
+                    report_date = ln.split(',', 1)[1].strip()
+                    break
+            if report_date:
                 break
-        if report_date:
-            break
     # fallback: YYYY/MM/DD
     m = re.search(r'(\d{4})/(\d{2})/(\d{2})', report_date)
     if m:

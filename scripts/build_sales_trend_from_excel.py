@@ -60,10 +60,15 @@ for i, m in enumerate(MONTHS):
 
 # ---------- 2. August from jerry-dashboard ----------
 def load_jerry():
-    p = os.path.expanduser('~/Downloads/sku_data_full.json')
+    # Prefer the committed snapshot so Aug GMV matches the Daily Order Report tab
+    # ($807,511.10) — live jerry may drift (2026-08-24: live showed $832,752.30).
+    p = os.path.expanduser('~/P0122001-Inventory-Dashboard/data/jerry_sku_data_full.json')
     if os.path.exists(p):
         return json.load(open(p, encoding='utf-8'))
-    # fallback: fetch
+    p2 = os.path.expanduser('~/Downloads/sku_data_full.json')
+    if os.path.exists(p2):
+        return json.load(open(p2, encoding='utf-8'))
+    # fallback: fetch live
     import urllib.request
     with urllib.request.urlopen('https://fificheck.github.io/jerry-dashboard/sku_data_full.json') as resp:
         return json.load(resp)
@@ -104,6 +109,17 @@ for m, val in [("2026-08", aug_total_qty)]:
     monthly_qty[m] = val
 orders_by_month["2026-08"] = None   # no orders data for Aug yet (jerry has none)
 customers_by_month["2026-08"] = None
+
+# ---------- 3b. GMV Target & Runrate (user-defined monthly targets, 2026) ----------
+TARGET_MONTHS = ["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08","2026-09","2026-10","2026-11","2026-12"]
+GMV_TARGETS = [1200000, 950000, 950000, 950000, 1300000, 900000, 900000, 1000000, 950000, 1300000, 1200000, 1100000]
+YEAR_TARGET = 12700000
+gmv_target = {
+    'labels': TARGET_MONTHS,
+    'targets': GMV_TARGETS,
+    'actual': [round(monthly_gmv.get(m, 0), 2) for m in TARGET_MONTHS],  # 0 for future months
+    'year_target': YEAR_TARGET,
+}
 
 # ---------- 4. Build chart data ----------
 gmv_by_month = {'labels': ALL_MONTHS, 'data': [round(monthly_gmv[m], 2) for m in ALL_MONTHS]}
@@ -168,6 +184,7 @@ out = {
     'sku_name_map': sku_name_map,
     'sku_product_name_map': sku_name_map,
     'sku_brand_map': sku_brand_map,
+    'gmv_target': gmv_target,
     'available_months': ALL_MONTHS,
     'summary': summary,
 }

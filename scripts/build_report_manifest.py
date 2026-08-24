@@ -82,6 +82,22 @@ def parse_order_file(name):
         return {'date': date, 'date_label': f"{y}-{mo}月全月", 'time': '235959',
                 'gmv': round(float(gmv), 2) if isinstance(gmv, (int, float)) else None,
                 'file': name, 'size': os.path.getsize(path)}
+    # Period reports (derived from jerry-dashboard): P0122001_GMV_Period_YYYYMMDD-YYYYMMDD.xlsx
+    m3 = re.match(r'P0122001_GMV_Period_(\d{8})-(\d{8})\.xlsx$', name)
+    if m3:
+        d1, d2 = m3.group(1), m3.group(2)
+        date = f"{d2[:4]}-{d2[4:6]}-{d2[6:8]}"
+        label = f"{d1[:4]}-{d1[4:6]}-{d1[6:8]} ~ {d2[4:6]}-{d2[6:8]}"
+        gmv = None
+        try:
+            gmv_map = json.load(open('data/gmv_monthly_totals.json', encoding='utf-8'))
+            gmv = gmv_map.get(f"{d1}-{d2[6:8]}")   # key format: YYYYMMDD-DD (e.g. 20260801-16)
+        except Exception:
+            gmv = None
+        path = os.path.join('reports/order_reports', name)
+        return {'date': date, 'date_label': label, 'time': '235959',
+                'gmv': round(float(gmv), 2) if isinstance(gmv, (int, float)) else None,
+                'file': name, 'size': os.path.getsize(path)}
     return None
 
 inventory = []

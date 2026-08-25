@@ -111,13 +111,19 @@ date_raw = now.strftime('%Y%m%d')
 time_raw = now.strftime('%H%M')
 rep_path = f'reports/inventory_report_{date_raw}_{time_raw}.csv'
 with open(rep_path, 'w', encoding='utf-8-sig', newline='') as f:
-    f.write('﻿﻿Stock Level Summary Report\n')
+    f.write('\ufeff\ufeffStock Level Summary Report\n')
     f.write('Merchant ID,P0122001\n')
     f.write('Merchant Name,SKECHERS\n')
     f.write(f'Date,{now.strftime("%Y/%m/%d")}\n')
     f.write(',,,,,,,,,,,,,,,Packing Dimension\n')
     f.write(open(CSV_PATH, encoding='utf-8-sig').read())
 print(f"written {rep_path} ({os.path.getsize(rep_path)} bytes)")
+# prune: keep ONE report per day (delete older same-day files, keep history of other days)
+import glob as _glob
+for old in _glob.glob(f'reports/inventory_report_{date_raw}_*.csv'):
+    if old != rep_path:
+        os.remove(old)
+        print(f"pruned same-day older report: {old}")
 
 meta = {
     'source': 'mms-api',

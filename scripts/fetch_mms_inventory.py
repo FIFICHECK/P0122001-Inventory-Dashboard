@@ -73,11 +73,11 @@ for it in rows:
 print(f"MMS lookup keys: {len(mms)}")
 
 # ---- 3. Merge into inventory_all.csv ----
-CSV = 'data/inventory_all.csv'
-if not os.path.exists(CSV):
-    print(f"!! {CSV} not found — run once from Exchange first"); sys.exit(1)
+CSV_PATH = 'data/inventory_all.csv'
+if not os.path.exists(CSV_PATH):
+    print(f"!! {CSV_PATH} not found — run once from Exchange first"); sys.exit(1)
 
-with open(CSV, encoding='utf-8-sig', newline='') as f:
+with open(CSV_PATH, encoding='utf-8-sig', newline='') as f:
     reader = csv.DictReader(f)
     fieldnames = reader.fieldnames
     db_rows = list(reader)
@@ -100,10 +100,24 @@ for r in db_rows:
         missing += 1
 print(f"merged: {updated} updated, {missing} SKUs not found in MMS response")
 
-with open(CSV, 'w', encoding='utf-8-sig', newline='') as f:
+with open(CSV_PATH, 'w', encoding='utf-8-sig', newline='') as f:
     w = csv.DictWriter(f, fieldnames=fieldnames)
     w.writeheader()
     w.writerows(db_rows)
+
+# ---- 4. Write reports/inventory_report_<date>_<time>.csv (Report tab download table) ----
+now = datetime.datetime.now()
+date_raw = now.strftime('%Y%m%d')
+time_raw = now.strftime('%H%M')
+rep_path = f'reports/inventory_report_{date_raw}_{time_raw}.csv'
+with open(rep_path, 'w', encoding='utf-8-sig', newline='') as f:
+    f.write('﻿﻿Stock Level Summary Report\n')
+    f.write('Merchant ID,P0122001\n')
+    f.write('Merchant Name,SKECHERS\n')
+    f.write(f'Date,{now.strftime("%Y/%m/%d")}\n')
+    f.write(',,,,,,,,,,,,,,,Packing Dimension\n')
+    f.write(open(CSV_PATH, encoding='utf-8-sig').read())
+print(f"written {rep_path} ({os.path.getsize(rep_path)} bytes)")
 
 meta = {
     'source': 'mms-api',
@@ -115,4 +129,4 @@ meta = {
 }
 with open('data/inventory_mms_meta.json', 'w', encoding='utf-8') as f:
     json.dump(meta, f, ensure_ascii=False, indent=2)
-print(f"written {CSV} + data/inventory_mms_meta.json ({updated} live fields merged)")
+print(f"written {CSV_PATH} + data/inventory_mms_meta.json ({updated} live fields merged)")

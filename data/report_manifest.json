@@ -8,11 +8,11 @@
    "size": 12252297
   },
   {
-   "date": "2026-08-21",
-   "time": "1200",
-   "skus": 40436,
-   "file": "inventory_report_20260821_1200.csv",
-   "size": 12252314
+   "date": "2026-08-25",
+   "time": "1417",
+   "skus": 40439,
+   "file": "inventory_report_20260825_1417.csv",
+   "size": 12252283
   }
  ],
  "order_reports": [
@@ -130,5 +130,5 @@
    "size": 81714
   }
  ],
- "updated_at": "2026-08-25 09:55:04"
+ "updated_at": "2026-08-25 14:17:52"
 }

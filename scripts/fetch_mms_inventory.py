@@ -50,6 +50,26 @@ while page <= 100:
     page += 1
 print(f"fetched {len(rows)} / {total} SKUs from MMS API (storeId {STORE_ID})")
 
+# ---- 1.5 Diagnostics: status distribution + target SKU raw record ----
+try:
+    from collections import Counter
+    st = Counter(); ss = Counter(); combos = Counter()
+    target = None
+    for it in rows:
+        bu = (it.get('buProductDetail') or [{}])[0]
+        st[str(bu.get('status', ''))] += 1
+        ss[str(bu.get('stockStatus', ''))] += 1
+        combos[(str(bu.get('status', '')), str(bu.get('stockStatus', '')), bu.get('isVisible'))] += 1
+        if 'P223U029-0018' in (it.get('skuId') or ''):
+            target = it
+    print('API status distribution:', dict(st))
+    print('API stockStatus distribution:', dict(ss))
+    print('API (status, stockStatus, isVisible) combos:', dict(combos))
+    if target:
+        print('TARGET P223U029-0018 raw:', json.dumps(target, ensure_ascii=False)[:900])
+except Exception as e:
+    print('diagnostics skipped:', e)
+
 # ---- 2. Build MMS lookup: normalized SKU -> live fields ----
 mms = {}
 for it in rows:
@@ -63,6 +83,7 @@ for it in rows:
         'stock': qty,
         'online': 'online' if str(bu.get('status', '')).upper() == 'ONLINE' else 'offline',
         'invisible': 'Y' if bu.get('isVisible') is False else 'N',
+        'foos': 'Y' if str(bu.get('stockStatus', '')).upper() == 'FORCEOUTOFSTOCK' else 'N',
         'sku_name_en': it.get('skuNameEn', ''),
         'sku_name_ch': it.get('skuNameCh', ''),
         'product_id': it.get('productId', ''),
@@ -91,6 +112,7 @@ for r in db_rows:
         r['StockLevel'] = m['stock']
         r['Online Status'] = m['online']
         r['Invisible'] = m['invisible']
+        r['Force Out Of Stock'] = m['foos']
         if m['sku_name_en']:
             r['SKU Name'] = m['sku_name_en']
         if m['sku_name_ch']:

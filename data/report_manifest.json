@@ -2,9 +2,9 @@
  "inventory_reports": [
   {
    "date": "2026-08-27",
-   "time": "0927",
+   "time": "1513",
    "skus": 40439,
-   "file": "inventory_report_20260827_0927.csv",
+   "file": "inventory_report_20260827_1513.csv",
    "size": 12252598
   },
   {
@@ -151,5 +151,5 @@
    "size": 81714
   }
  ],
- "updated_at": "2026-08-27 09:47:24"
+ "updated_at": "2026-08-27 15:15:23"
 }

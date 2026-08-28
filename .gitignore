@@ -1,2 +1,5 @@
 __pycache__/
 *.pyc
+
+# sensitive: 107-store GMV snapshot - keep local only
+data/jerry_sku_data_full.json

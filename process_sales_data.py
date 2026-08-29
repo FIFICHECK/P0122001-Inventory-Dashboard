@@ -312,6 +312,12 @@ const salesSummary = {{
     
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(js_content)
+    # B pilot: 純 JSON (dashboard 由 worker 攞)
+    import re as _re
+    _m = _re.search(r'const salesTrendData = (\{.*?\});', js_content, _re.S)
+    if _m:
+        with open('data/sales_trend_data.json', 'w', encoding='utf-8') as _f:
+            _f.write(_m.group(1))
     
     print(f"Generated: {output_path}")
     return js_content

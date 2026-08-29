@@ -17,6 +17,13 @@ data_json = m.group(1)
 json.loads(data_json)
 print("extracted JSON:", len(data_json), "chars")
 
+import json as _json
+# B pilot (2026-08-29): 唔再注入 index.html — dashboard 由 worker 攞 JSON
+with open('data/sales_trend_data.json', 'w', encoding='utf-8') as _f:
+    _json.dump(json.loads(data_json), _f, ensure_ascii=False, indent=1)
+print('✅ data/sales_trend_data.json written (no index.html injection — B pilot private data)')
+raise SystemExit(0)
+# ── 以下舊 injection 邏輯保留但唔會行 ──
 h = open('index.html', encoding='utf-8').read()
 
 # Replace the inline declaration block (match any preceding comment line)

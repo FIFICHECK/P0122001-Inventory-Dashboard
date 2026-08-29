@@ -131,6 +131,12 @@ const salesTrendData = {json.dumps(chart_data, ensure_ascii=False, indent=2)};
 
 with open('data/sales_trend_data.js', 'w', encoding='utf-8') as f:
     f.write(js_content)
+# B pilot: 純 JSON (dashboard 由 worker 攞)
+import re as _re
+_m = _re.search(r'const salesTrendData = (\{.*?\});', js_content, _re.S)
+if _m:
+    with open('data/sales_trend_data.json', 'w', encoding='utf-8') as _f:
+        _f.write(_m.group(1))
 
 print(f"\nGenerated: data/sales_trend_data.js ({len(js_content)} bytes)")
 print(f"Keys in chart_data: {list(chart_data.keys())}")

@@ -25,7 +25,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install playwright pandas openpyxl
+          pip install playwright==1.45.0 pandas==2.2.2 openpyxl==3.1.5
           playwright install --with-deps chromium
 
       - name: Run Exchange download script

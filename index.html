@@ -157,7 +157,7 @@
         </div>
 
         <ul class="nav nav-tabs">
-            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#all">📋 All</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#all">📋 All</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#skuid">🔢 By Online SKU</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#brand">🏷️ Brand</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#category">📦 By Category</button></li>
@@ -166,11 +166,11 @@
             <li class="nav-item"><button class="nav-link text-warning" data-bs-toggle="tab" data-bs-target="#newsku">🆕 New SKU</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#pricecheck">💰 Price Check</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#report">📋 Report</button></li>
-            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#salestrend">📈 Sales Trend</button></li>
+            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#salestrend">📈 Sales Trend</button></li>
         </ul>
 
         <div class="tab-content">
-            <div class="tab-pane fade show active" id="all">
+            <div class="tab-pane fade" id="all">
                 <div class="card mt-3">
                     <div class="card-header d-flex gap-2 py-3 flex-wrap">
                         <input type="text" id="searchAll" placeholder="🔍 Search..." class="form-control" style="max-width:200px" onkeyup="filterTable('all')">
@@ -421,7 +421,7 @@
                 </div>
             </div>
     
-<div class="tab-pane fade" id="salestrend">
+<div class="tab-pane fade show active" id="salestrend">
                 <div class="card mt-3">
                     <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <span class="fw-bold">📈 Sales Trend 銷售趨勢</span>
@@ -477,7 +477,7 @@
                         <div class="row mb-3">
                             <div class="col-12">
                                 <div class="jp-btn-nav" id="salesChartNav">
-                                    <button type="button" class="jp-btn active" onclick="switchSalesChart('gmvByDate', this)">1. GMV by Date</button>
+                                    <button type="button" class="jp-btn" onclick="switchSalesChart('gmvByDate', this)">1. GMV by Date</button>
                                     <button type="button" class="jp-btn" onclick="switchSalesChart('gmvByMonth', this)">2. GMV by Monthly</button>
                                     <button type="button" class="jp-btn" onclick="switchSalesChart('gmvByHour', this)">3. GMV by Hour</button>
                                     <button type="button" class="jp-btn" onclick="switchSalesChart('gmvByDayOfWeek', this)">4. GMV by Day of Week</button>
@@ -487,7 +487,7 @@
                                     <button type="button" class="jp-btn" onclick="switchSalesChart('qtyBySkuMonthly', this)">8. Qty by SKU (Monthly)</button>
                                     <button type="button" class="jp-btn" onclick="switchSalesChart('gmvByBrandDaily', this)">9. GMV by Brand (Daily)</button>
                                     <button type="button" class="jp-btn" onclick="switchSalesChart('gmvByBrandMonthly', this)">10. GMV by Brand (Monthly)</button>
-                                    <button type="button" class="jp-btn" onclick="switchSalesChart('gmvTarget', this)">11. GMV Target & Runrate</button>
+                                    <button type="button" class="jp-btn active" onclick="switchSalesChart('gmvTarget', this)">11. GMV Target & Runrate</button>
                                 </div>
                             </div>
                         </div>
@@ -695,7 +695,7 @@
                     // Sales Trend Data (from the GP Report monthly SKU data)
     let salesTrendData = {};
     
-    let currentSalesChart = 'gmvByDate';
+    let currentSalesChart = 'gmvTarget';
     let currentDateFilter = '';
     let currentMonthFilter = '';
     let currentYearFilter = '';

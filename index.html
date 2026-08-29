@@ -1679,7 +1679,11 @@ if (isSkuChart) html += '<th class="text-start">SKU ID</th><th class="text-start
 
     document.addEventListener('DOMContentLoaded', function() {
         populateSalesFilters();
-        setTimeout(() => switchSalesChart('gmvByDate', document.querySelector('#salesChartNav .jp-btn')), 100);
+        setTimeout(() => {
+            const ab = document.querySelector('#salesChartNav .jp-btn.active');
+            const cn = ab ? ab.getAttribute('onclick').match(/'([^']+)'/)[1] : currentSalesChart;
+            switchSalesChart(cn, ab);
+        }, 100);
 
         // Fix: Re-render chart when Sales Trend tab is shown
         // Chart.js cannot measure container size when tab is hidden (0x0 canvas)
@@ -2143,6 +2147,12 @@ if (isSkuChart) html += '<th class="text-start">SKU ID</th><th class="text-start
         const res = await dataFetch('data/sales_trend_data.json');
         if (res.ok) { salesTrendData = await res.json(); }
       } catch (e) { console.error('sales trend load failed', e); }
+      // 數據到咗先 render（async load 之前 initial render 會得空數據）
+      try {
+        const ab = document.querySelector('#salesChartNav .jp-btn.active');
+        const cn = ab ? ab.getAttribute('onclick').match(/'([^']+)'/)[1] : currentSalesChart;
+        switchSalesChart(cn, ab);
+      } catch (e2) { console.error('sales trend re-render failed', e2); }
     }
     async function loadInventory() {
         try {

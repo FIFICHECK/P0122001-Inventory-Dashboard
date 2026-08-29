@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.sheetjs.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https://www.hktvmall.com; font-src 'self' data: https://cdn.jsdelivr.net; connect-src 'self' https://www.hktvmall.com https://fificheck-access-gate.fificheck.workers.dev; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
     <title>P0122001 Store Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet" integrity="sha384-l4UPAMHGzl7zwogLW4nOwaU2XTk6oiM1jhCRQstZEndoIiA2I5bg6fST3wzBSRBD" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" integrity="sha384-JUh163oCRItcbPme8pYnROHQMC6fNKTBWtRG3I3I0erJkzNgL7uxKlNwcrcFKeqF" crossorigin="anonymous"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
     <style>
         :root { --primary: #1e40af; --success: #16a34a; --warning: #d97706; --danger: #dc2626; }
         body { background: #f0f4f8; font-family: 'Inter', system-ui, sans-serif; }
@@ -18,7 +19,7 @@
         .kpi-value { font-size: 2.5rem; font-weight: 700; }
         .kpi-label { font-size: 0.8rem; color: #64748b; margin-top: 4px; }
         .table { font-size: 0.8rem; }
-        .table-container { max-height: 450px; overflow-y: auto; }
+        .table-container { max-height: 450px; overflow-y: auto; scrollbar-gutter: stable; }
         .table thead th { background: #f8fafc; position: sticky; top: 0; z-index: 1; border-bottom: 2px solid #e2e8f0; }
         .table tbody tr { cursor: pointer; transition: background 0.15s; }
         .table tbody tr:hover { background: #f1f5f9; }
@@ -70,9 +71,67 @@
         .jp-btn.active:hover {
             background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
         }
+        /* 🔒 Access gate (H6183001 pattern: email 申請 → admin approve → allowlist) */
+        #access-gate {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: #f0f4f8;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .gate-box {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+            padding: 36px 32px;
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+        }
+        .gate-box .gate-icon { font-size: 48px; margin-bottom: 12px; }
+        .gate-box h2 { color: #1e293b; margin: 0 0 10px; font-size: 1.25rem; }
+        .gate-box p { color: #64748b; font-size: 0.9rem; margin: 0 0 20px; line-height: 1.6; }
+        .gate-box input {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            margin-bottom: 12px;
+            color: #1e293b;
+        }
+        .gate-box button {
+            width: 100%;
+            padding: 11px 14px;
+            border: none;
+            border-radius: 8px;
+            background: #1e40af;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .gate-box button:hover { background: #1a37a5; }
+        #gate-status { margin-top: 14px; font-size: 0.9rem; min-height: 1.2em; }
         </style>
 </head>
 <body>
+    <!-- 🔒 Access gate: email 申請 → admin approve → allowlist -->
+    <div id="access-gate">
+        <div class="gate-box">
+            <div class="gate-icon">👟</div>
+            <h2>🔒 受保護的 Dashboard</h2>
+            <p>此 Dashboard 只供獲授權人士查閱。<br>請輸入你的 Email 申請訪問權限，管理員批准後即可進入。</p>
+            <input type="email" id="gate-email" placeholder="你的 Email" autocomplete="email">
+            <button id="gate-submit">申請訪問</button>
+            <p id="gate-status"></p>
+        </div>
+    </div>
     <div class="container-fluid py-4 px-4">
         <div class="card mb-4 header-bg text-white">
             <div class="card-body py-4">
@@ -147,7 +206,7 @@
                 <div class="card mt-3">
                     <div class="card-header py-3 d-flex gap-2 flex-wrap align-items-center">
                         <span class="fw-bold">📦 By Category</span>
-                        <input type="text" id="categoryNameSearch" placeholder="🔍 Category Name..." class="form-control form-control-sm" style="width:150px" onkeyup="filterCategoryTable()">
+                        <input type="text" id="categoryNameSearch" placeholder="🔍 Category Code / Name..." class="form-control form-control-sm" style="width:150px" onkeyup="filterCategoryTable()">
                         <select id="categoryFilter" class="form-select form-select-sm" style="width:180px" onchange="filterCategoryTable()">
                             <option value="type">By Category Type (大類)</option>
                             <option value="full">By Full Category Code (完整)</option>
@@ -196,13 +255,24 @@
                 </div>
             </div>
             <div class="tab-pane fade" id="skustatus">
-                <div class="row mt-3">
+                <div class="card mt-3">
+                    <div class="card-header py-3 d-flex gap-2 flex-wrap align-items-center">
+                        <span class="fw-bold">📊 By SKU Status</span>
+                        <button class="btn btn-sm btn-success ms-auto" onclick="downloadSkuStatusExcel()">📥 下載 Excel</button>
+                    </div>
+                    <div class="card-body">
+                <div class="row">
         <!-- Online Status -->
         <div class="col-md-4 mb-3">
             <div class="card border-primary h-100">
                 <div class="card-header bg-primary text-white py-2 d-flex justify-content-between align-items-center">
                     <span>🌐 Online Status</span>
-                    <span class="text-dark">349 online / 15 offline</span>
+                    <span class="small" id="skuStatusCount0"></span>
+                    <select id="skuStatusFilter0" class="form-select form-select-sm" style="width:110px" onchange="renderSkuStatus()">
+                        <option value="all">全部</option>
+                        <option value="yes">🌐 Online</option>
+                        <option value="no">⚫ Offline</option>
+                    </select>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive" style="max-height:320px;overflow-y:auto">
@@ -210,7 +280,7 @@
                             <thead style="position:sticky;top:0;background:#f8fafc;z-index:1">
                                 <tr><th>SKU</th><th>Product</th><th class="text-end">Stock</th><th>Status</th></tr>
                             </thead>
-                            <tbody></tbody>
+                            <tbody id="skuStatusBody0"></tbody>
                         </table>
                     </div>
                 </div>
@@ -221,7 +291,12 @@
             <div class="card border-warning h-100">
                 <div class="card-header bg-warning text-dark py-2 d-flex justify-content-between align-items-center">
                     <span>👁️ Invisible</span>
-                    <span class="text-dark">73 Y / 291 N</span>
+                    <span class="small" id="skuStatusCount1"></span>
+                    <select id="skuStatusFilter1" class="form-select form-select-sm" style="width:110px" onchange="renderSkuStatus()">
+                        <option value="all">全部</option>
+                        <option value="yes">👁️ Invisible</option>
+                        <option value="no">✅ Visible</option>
+                    </select>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive" style="max-height:320px;overflow-y:auto">
@@ -229,7 +304,7 @@
                             <thead style="position:sticky;top:0;background:#f8fafc;z-index:1">
                                 <tr><th>SKU</th><th>Product</th><th class="text-end">Stock</th><th>Status</th></tr>
                             </thead>
-                            <tbody></tbody>
+                            <tbody id="skuStatusBody1"></tbody>
                         </table>
                     </div>
                 </div>
@@ -240,7 +315,12 @@
             <div class="card border-danger h-100">
                 <div class="card-header bg-danger text-white py-2 d-flex justify-content-between align-items-center">
                     <span>🚫 Force OOS</span>
-                    <span class="text-dark">1 Y / 363 N</span>
+                    <span class="small" id="skuStatusCount2"></span>
+                    <select id="skuStatusFilter2" class="form-select form-select-sm" style="width:110px" onchange="renderSkuStatus()">
+                        <option value="all">全部</option>
+                        <option value="yes">🚫 Force OOS</option>
+                        <option value="no">✅ Available</option>
+                    </select>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive" style="max-height:320px;overflow-y:auto">
@@ -248,12 +328,14 @@
                             <thead style="position:sticky;top:0;background:#f8fafc;z-index:1">
                                 <tr><th>SKU</th><th>Product</th><th class="text-end">Stock</th><th>Status</th></tr>
                             </thead>
-                            <tbody></tbody>
+                            <tbody id="skuStatusBody2"></tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </div></div>
+                    </div>
+                </div>
             </div>
             <div class="tab-pane fade" id="alerts">
                 <div class="row mt-3">
@@ -281,6 +363,9 @@
                             <option value="flat">➖ 無變動</option>
                             <option value="none">— 暂无数据</option>
                         </select>
+                        <button type="button" class="btn btn-sm btn-success" onclick="downloadPriceCheckExcel()" title="下載跟據 filter 嘅 Price Check 數據 (Excel)">
+                            <i class="bi bi-download me-1"></i>📥 下載 Excel
+                        </button>
                     </div>
                     <div class="table-container">
                         <table class="table table-hover mb-0">
@@ -402,6 +487,7 @@
                                     <button type="button" class="jp-btn" onclick="switchSalesChart('qtyBySkuMonthly', this)">8. Qty by SKU (Monthly)</button>
                                     <button type="button" class="jp-btn" onclick="switchSalesChart('gmvByBrandDaily', this)">9. GMV by Brand (Daily)</button>
                                     <button type="button" class="jp-btn" onclick="switchSalesChart('gmvByBrandMonthly', this)">10. GMV by Brand (Monthly)</button>
+                                    <button type="button" class="jp-btn" onclick="switchSalesChart('gmvTarget', this)">11. GMV Target & Runrate</button>
                                 </div>
                             </div>
                         </div>
@@ -410,19 +496,21 @@
                             <canvas id="salesTrendChart"></canvas>
                         </div>
                         <div id="salesTableContainer" style="display:none;"></div>
+                        <div id="salesTargetSummary" style="display:none;"></div>
+                        <div id="salesTargetTable" style="display:none;"></div>
                 </div>
             </div>
         </div>
         <div class="text-center mt-4 text-muted"><small>P0122001 Inventory | Exchange Portal | Auto-updated by Hermes Agent</small></div>
     </div>
     <div class="detail-modal" id="detailModal"><div class="detail-card"><h4 id="modalTitle" class="mb-3"></h4><p id="modalContent"></p><div class="text-end"><button class="btn btn-secondary" onclick="closeModal()">Close</button></div></div></div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
     <script>
         function switchTab(t){document.querySelector('[data-bs-target="#'+t+'"]').click()}
         function showDetail(sku,name,inv,status){
             const L={'zero':'🚫 Zero','low':'⚠️ Low','normal':'🟢 Normal','high':'🔵 High'};
             document.getElementById('modalTitle').textContent=name;
-            document.getElementById('modalContent').innerHTML='<table class="table"><tr><td><strong>SKU</strong></td><td><code>'+sku+'</code></td></tr><tr><td><strong>Stock</strong></td><td>'+inv.toLocaleString()+'</td></tr><tr><td><strong>Status</strong></td><td>'+L[status]+'</td></tr></table>';
+            document.getElementById('modalContent').innerHTML='<table class="table"><tr><td><strong>SKU</strong></td><td><code>'+esc(sku)+'</code></td></tr><tr><td><strong>Stock</strong></td><td>'+inv.toLocaleString()+'</td></tr><tr><td><strong>Status</strong></td><td>'+L[status]+'</td></tr></table>';
             document.getElementById('detailModal').classList.add('show');
         }
         function closeModal(){document.getElementById('detailModal').classList.remove('show')}
@@ -508,42 +596,41 @@
                 fullBody.style.display = 'none';
                 col1.textContent = 'Category';
                 col2.textContent = 'Code';
-                if(categoryCount) categoryCount.textContent = typeBody.querySelectorAll('tr').length + ' category types';
             } else {
                 typeBody.style.display = 'none';
                 fullBody.style.display = '';
-                col1.textContent = 'Primary Category Code';
-                col2.textContent = 'Primary Category Name (CHI)';
-                if(categoryCount) categoryCount.textContent = fullBody.querySelectorAll('tr').length + ' categories';
-
-                const rows = fullBody.querySelectorAll('tr');
-                rows.forEach(row => {
-                    let show = true;
-
-                    if (nameSearch) {
-                        const catName = row.cells[1]?.textContent.toLowerCase() || '';
-                        if (!catName.includes(nameSearch)) show = false;
-                    }
-
-                    if (onlineFilter) {
-                        const online = row.dataset.online || '';
-                        if (onlineFilter === 'online' && online !== 'online') show = false;
-                        if (onlineFilter === 'offline' && online !== 'offline') show = false;
-                    }
-
-                    if (invisibleFilter) {
-                        const inv = row.dataset.invisible || '';
-                        if (inv !== invisibleFilter) show = false;
-                    }
-
-                    if (foosFilter) {
-                        const foos = row.dataset.foos || '';
-                        if (foos !== foosFilter) show = false;
-                    }
-
-                    row.style.display = show ? '' : 'none';
-                });
+                col1.textContent = 'Primary Category Name (CHI)';
+                col2.textContent = 'Primary Category Code';
             }
+
+            const rows = (view === 'type' ? typeBody : fullBody).querySelectorAll('tr');
+            rows.forEach(row => {
+                let show = true;
+                if (nameSearch) {
+                    const catName = (row.cells[0]?.textContent || '').toLowerCase();
+                    const catCode = (row.cells[1]?.textContent || '').toLowerCase();
+                    if (!catName.includes(nameSearch) && !catCode.includes(nameSearch)) show = false;
+                }
+
+                if (onlineFilter) {
+                    const online = row.dataset.online || '';
+                    if (onlineFilter === 'online' && online !== 'online') show = false;
+                    if (onlineFilter === 'offline' && online !== 'offline') show = false;
+                }
+
+                if (invisibleFilter) {
+                    const inv = row.dataset.invisible || '';
+                    if (inv !== invisibleFilter) show = false;
+                }
+
+                if (foosFilter) {
+                    const foos = row.dataset.foos || '';
+                    if (foos !== foosFilter) show = false;
+                }
+
+                row.style.display = show ? '' : 'none';
+            });
+            if (categoryCount) categoryCount.textContent = rows.length + (view === 'type' ? ' category types' : ' categories');
         }
         function filterPriceTable(){
             const searchInput = document.getElementById('searchPrice');
@@ -569,16 +656,44 @@
                     if (filter === 'down' && pricedelta !== 'down') show = false;
                     if (filter === 'flat' && pricedelta !== 'flat') show = false;
                     if (filter === 'none' && pricedelta !== 'none') show = false;
-                }
-                row.style.display = show ? '' : 'none';
-            });
-        }
+                    }
+                    row.style.display = show ? '' : 'none';
+                    });
+                    }
         
-    // Sales Trend Data (embedded from order reports)
-    const salesTrendData = {
-  "gmv_by_date": {"labels": [], "data": []},
-  "summary": {}
-};
+                    // Download the currently-filtered Price Check rows as Excel (.xlsx)
+                    function downloadPriceCheckExcel() {
+                    const tbody = document.getElementById('tablePrice');
+                    if (!tbody) return;
+                    if (typeof XLSX === 'undefined') {
+                    alert('Excel 匯出函式未載入，請檢查網絡後重新整理頁面。');
+                    return;
+                    }
+                    // Collect VISIBLE rows (respects search box + brand + price-change filters)
+                    const rows = [];
+                    tbody.querySelectorAll('tr').forEach(row => {
+                    if (row.style.display === 'none') return;
+                    const cells = row.querySelectorAll('td');
+                    if (!cells.length) return;
+                    rows.push(Array.from(cells).map(c => c.innerText.trim()));
+                    });
+                    if (!rows.length) {
+                    alert('冇數據可以匯出 — 請檢查 filter 設定。');
+                    return;
+                    }
+                    const headers = ['SKU', 'Brand', 'Product Name', 'RSP', 'PSP', 'SKECHERS官網', '差價', '走向', '變動', '狀態'];
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([headers].concat(rows)), 'Price Check');
+                    const searchInput = document.getElementById('searchPrice');
+                    const search = searchInput ? searchInput.value.trim().replace(/[^\w\u4e00-\u9fff-]/g, '_').slice(0, 20) : '';
+                    const filterSel = document.getElementById('filterPrice');
+                    const filter = filterSel ? filterSel.value : 'all';
+                    const fname = 'P0122001_PriceCheck' + (search ? '_' + search : '') + '_' + filter + '_' + rows.length + 'rows.xlsx';
+                    XLSX.writeFile(wb, fname);
+                    }
+        
+                    // Sales Trend Data (from the GP Report monthly SKU data)
+    let salesTrendData = {};
     
     let currentSalesChart = 'gmvByDate';
     let currentDateFilter = '';
@@ -588,6 +703,7 @@
     let currentDateTo = '';
     let isInitialLoad = true;
     let salesChartInstance = null;
+    let targetFilterTouched = false;
 
     function populateSalesFilters() {
         const dateSelect = document.getElementById('salesDateFilter');
@@ -636,14 +752,12 @@
             monthSelect.innerHTML = '<option value="">全部月份</option>';
             let filteredMonths;
             if (currentYearFilter) {
-                filteredMonths = [...new Set(dates.filter(d => d.startsWith(currentYearFilter)).map(d => d.substring(0, 7)))].sort().reverse();
+                filteredMonths = [...new Set((salesTrendData.gmv_by_month.labels || []).filter(m => m.startsWith(currentYearFilter)))].sort().reverse();
             } else {
-                // Use available_months (always current + 2 previous calendar months)
-                                filteredMonths = salesTrendData.available_months || salesTrendData.gmv_by_month.labels || [];
+                // Use available_months / gmv_by_month labels — ALL months, newest first (no display limit)
+                filteredMonths = [...new Set(salesTrendData.gmv_by_month.labels || [])].sort().reverse();
 
             }
-            // Always show max 3 months (current + 2 previous)
-            filteredMonths = filteredMonths.slice(0, 3);
             filteredMonths.forEach(m => {
                 const opt = document.createElement('option'); opt.value = m; opt.textContent = m;
                 monthSelect.appendChild(opt);
@@ -669,6 +783,8 @@
             } else {
                 filteredDates = dates;
             }
+            // Newest first (e.g. 2026-08-23 at top — user preference)
+            filteredDates = [...filteredDates].sort().reverse();
             filteredDates.forEach(d => {
                 const opt = document.createElement('option'); opt.value = d; opt.textContent = d;
                 dateSelect.appendChild(opt);
@@ -721,6 +837,7 @@
     function filterSalesByMonth() {
         const monthSelect = document.getElementById('salesMonthFilter');
         currentMonthFilter = monthSelect.value;
+        targetFilterTouched = true;
         // Clear date filter when month filter is selected
         if (currentMonthFilter) {
             currentDateFilter = '';
@@ -733,6 +850,7 @@
     function filterSalesByYear() {
         const yearSelect = document.getElementById('salesYearFilter');
         currentYearFilter = yearSelect.value;
+        targetFilterTouched = true;
         // Clear month and date filters when year filter is selected
         currentMonthFilter = '';
         currentDateFilter = '';
@@ -830,7 +948,7 @@
             }
             return { labels: filteredLabels, data: filteredData };
         }
-        // Month filter applies to all chart types
+        // Month filter applies to Daily/Hour charts
         if (currentMonthFilter && (chartName.includes('Daily') || chartName.includes('Hour'))) {
             filteredLabels = [];
             filteredData = [];
@@ -842,7 +960,8 @@
             });
             return { labels: filteredLabels, data: filteredData };
         }
-        if (currentMonthFilter && !chartName.includes('Daily') && !chartName.includes('Hour')) {
+        // Month filter applies to other charts (except gmvByMonth which is already monthly-aggregated)
+        if (currentMonthFilter && !chartName.includes('Daily') && !chartName.includes('Hour') && chartName !== 'gmvByMonth') {
             filteredLabels = [];
             filteredData = [];
             labels.forEach((l, i) => {
@@ -868,6 +987,7 @@
         'qtyBySkuMonthly': { dataKey: 'qty_by_sku_monthly', type: 'bar', multiDataset: true },
         'gmvByBrandDaily': { dataKey: 'gmv_by_brand_daily', type: 'bar', multiDataset: true },
         'gmvByBrandMonthly': { dataKey: 'gmv_by_brand_monthly', type: 'bar', multiDataset: true },
+        'gmvTarget': { dataKey: 'gmv_target', type: 'bar', multiDataset: false },
     };
 
     function switchSalesChart(chartName, btn) {
@@ -876,6 +996,11 @@
         currentSalesChart = chartName;
         const config = chartConfigs[chartName];
         if (!config) return;
+        // Hide target summary unless on the target chart
+        const tSummEl = document.getElementById('salesTargetSummary');
+        if (tSummEl && chartName !== 'gmvTarget') tSummEl.style.display = 'none';
+        const tTblEl = document.getElementById('salesTargetTable');
+        if (tTblEl && chartName !== 'gmvTarget') tTblEl.style.display = 'none';
         
         // Only reset to current year-month-day on INITIAL page load
         if (isInitialLoad) {
@@ -936,6 +1061,118 @@
             };
         }
         updateSalesSummary();
+        // ---- GMV Target & Runrate (Tag 11) ----
+        if (chartName === 'gmvTarget') {
+            const tgt = salesTrendData.gmv_target || { labels: [], targets: [], actual: [], year_target: 0 };
+            const tLabels = tgt.labels || [];
+            const tTargets = tgt.targets || [];
+            const tActual = tgt.actual || [];
+            // Apply month/year filters ONLY when the user manually picked one
+            // (initial page load auto-sets currentMonthFilter=now; target chart should show all 12 months)
+            let idx = tLabels.map((_, i) => i);
+            if (targetFilterTouched) {
+                if (currentYearFilter) idx = idx.filter(i => tLabels[i].startsWith(currentYearFilter));
+                if (currentMonthFilter) idx = idx.filter(i => tLabels[i] === currentMonthFilter);
+            }
+            const fLabels = idx.map(i => tLabels[i]);
+            const fTargets = idx.map(i => tTargets[i]);
+            const fActual = idx.map(i => tActual[i]);
+            const tChartEl = document.getElementById('salesTrendChart');
+            tChartEl.style.display = '';
+            tChartEl.style.height = '420px';
+            const tWrap = tChartEl.closest('.chart-container');
+            if (tWrap) { tWrap.style.height = '420px'; tWrap.style.overflowY = ''; }
+            const tTable = document.getElementById('salesTableContainer');
+            if (tTable) tTable.style.display = 'none';
+            const dRow = document.getElementById('salesDateFilterRow');
+            if (dRow) dRow.style.display = 'none';
+            const rRow = document.getElementById('salesRangeFilterRow');
+            if (rRow) rRow.style.display = 'none';
+            const mRow = document.getElementById('salesMonthFilterRow');
+            if (mRow) mRow.style.display = '';
+            const yRow = document.getElementById('salesYearFilterRow');
+            if (yRow) yRow.style.display = '';
+            if (salesChartInstance) salesChartInstance.destroy();
+            const ctxT = tChartEl.getContext('2d');
+            salesChartInstance = new Chart(ctxT, {
+                type: 'bar',
+                data: {
+                    labels: fLabels,
+                    datasets: [
+                        { label: 'Target (Runrate)', data: fTargets, backgroundColor: 'rgba(148,163,184,0.55)', borderColor: '#64748b', borderWidth: 1, order: 2 },
+                        { label: 'Actual GMV', data: fActual, backgroundColor: 'rgba(30,64,175,0.75)', borderColor: '#1e40af', borderWidth: 1, order: 1 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(c) {
+                                    const v = c.raw || 0;
+                                    return c.dataset.label + ': $' + v.toLocaleString(undefined, {minimumFractionDigits: 2});
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: '2026 月份' } },
+                        y: { beginAtZero: true, title: { display: true, text: 'GMV (HKD)' } }
+                    }
+                }
+            });
+            const totalActual = tActual.reduce((a, b) => a + (b || 0), 0);
+            const yearT = tgt.year_target || 0;
+            const pct = yearT ? (totalActual / yearT * 100) : 0;
+            const remaining = yearT - totalActual;
+            const remainMonths = tLabels.filter((_, i) => !tActual[i]).length;
+            const needed = remainMonths ? remaining / remainMonths : 0;
+            const over = remaining <= 0;
+            const summEl = document.getElementById('salesTargetSummary');
+            if (summEl) {
+                summEl.style.display = '';
+                summEl.innerHTML =
+                    '<div class="row g-2 mt-2">'
+                    + '<div class="col-6 col-md-3"><div class="border rounded p-2 text-center"><div class="text-muted small">全年 Target</div><div class="fw-bold">$' + yearT.toLocaleString() + '</div></div></div>'
+                    + '<div class="col-6 col-md-3"><div class="border rounded p-2 text-center"><div class="text-muted small">已實現 GMV (Jan-Aug)</div><div class="fw-bold">$' + totalActual.toLocaleString(undefined, {minimumFractionDigits: 2}) + '</div></div></div>'
+                    + '<div class="col-6 col-md-3"><div class="border rounded p-2 text-center"><div class="text-muted small">進度</div><div class="fw-bold ' + (pct >= 100 ? 'text-success' : '') + '">' + pct.toFixed(1) + '%</div></div></div>'
+                    + '<div class="col-6 col-md-3"><div class="border rounded p-2 text-center"><div class="text-muted small">' + (over ? '超額完成' : '剩餘每月需達') + '</div><div class="fw-bold ' + (over ? 'text-success' : 'text-danger') + '">' + (over ? '$' + (-remaining).toLocaleString() : '$' + needed.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})) + '</div></div></div>'
+                    + '</div>';
+            }
+            // Monthly comparison + runrate table (filtered)
+            const tblEl = document.getElementById('salesTargetTable');
+            if (tblEl) {
+                tblEl.style.display = '';
+                let rows = '<table class="table table-sm table-striped mt-3"><thead><tr>'
+                    + '<th>月份</th><th class="text-end">Target (Runrate)</th><th class="text-end">Actual GMV</th>'
+                    + '<th class="text-end">達成率</th><th class="text-end">差異 (Actual−Target)</th></tr></thead><tbody>';
+                let tTot = 0, aTot = 0;
+                fTargets.forEach((tv, ri) => {
+                    const av = fActual[ri] || 0;
+                    tTot += tv; aTot += av;
+                    const pct = tv ? (av / tv * 100) : 0;
+                    const diff = av - tv;
+                    const pctCls = pct >= 100 ? 'text-success' : (pct > 0 ? 'text-danger' : 'text-muted');
+                    const diffCls = diff >= 0 ? 'text-success' : 'text-danger';
+                    rows += '<tr><td>' + fLabels[ri] + '</td>'
+                        + '<td class="text-end">$' + tv.toLocaleString() + '</td>'
+                        + '<td class="text-end">$' + av.toLocaleString(undefined, {minimumFractionDigits: 2}) + '</td>'
+                        + '<td class="text-end ' + pctCls + '">' + pct.toFixed(1) + '%</td>'
+                        + '<td class="text-end ' + diffCls + '">' + (diff >= 0 ? '+' : '−') + '$' + Math.abs(diff).toLocaleString(undefined, {minimumFractionDigits: 2}) + '</td></tr>';
+                });
+                const totPct = tTot ? (aTot / tTot * 100) : 0;
+                const totDiff = aTot - tTot;
+                rows += '</tbody><tfoot><tr class="table-dark fw-bold"><td>合計 (' + fLabels.length + ' 月)</td>'
+                    + '<td class="text-end">$' + tTot.toLocaleString() + '</td>'
+                    + '<td class="text-end">$' + aTot.toLocaleString(undefined, {minimumFractionDigits: 2}) + '</td>'
+                    + '<td class="text-end ' + (totPct >= 100 ? 'text-success' : 'text-danger') + '">' + totPct.toFixed(1) + '%</td>'
+                    + '<td class="text-end ' + (totDiff >= 0 ? 'text-success' : 'text-danger') + '">' + (totDiff >= 0 ? '+' : '−') + '$' + Math.abs(totDiff).toLocaleString(undefined, {minimumFractionDigits: 2}) + '</td></tr></tfoot></table>';
+                tblEl.innerHTML = rows;
+            }
+            return;
+        }
         const ctx = document.getElementById('salesTrendChart').getContext('2d');
         const rawData = salesTrendData[config.dataKey];
         let data;
@@ -999,21 +1236,31 @@
                     return { item, sum };
                 });
                 totals.sort((a, b) => b.sum - a.sum);
-                const top10 = totals.slice(0, 10);
+                const top10 = totals.slice(0, 20);  // Chart shows TOP 20 only; table below has NO limit (all SKUs)
                 
                 // Prepare chart labels and values
                 const chartLabels = top10.map(t => {
                     if (isSkuChart) {
-                        // Use product name from order report (sku_product_name_map), fallback to inventory name
+                        // Show SKU ID prominently + product name (user wants SKU ID detail)
                         const name = (salesTrendData.sku_product_name_map && salesTrendData.sku_product_name_map[t.item])
-                            || salesTrendData.sku_name_map[t.item] || t.item;
-                        // Truncate long names
-                        return name.length > 20 ? name.substring(0, 17) + '...' : name;
+                            || salesTrendData.sku_name_map[t.item] || '';
+                        // SKU ID first (no P0122001_S_ prefix), then truncated name
+                        const shortName = name.length > 18 ? name.substring(0, 15) + '...' : name;
+                        return shortName ? skuDisplay(t.item) + '  ' + shortName : skuDisplay(t.item);
                     }
                     return t.item;
                 });
                 const chartValues = top10.map(t => t.sum);
                 const isGmv = !isQty;
+                
+                // Dynamic height so ALL bars are visible (scrollable chart)
+                const chartEl = document.getElementById('salesTrendChart');
+                if (chartEl) {
+                    const h = Math.max(400, top10.length * 24) + 'px';
+                    chartEl.style.height = h;
+                    const wrap = chartEl.closest('.chart-container');
+                    if (wrap) { wrap.style.height = h; wrap.style.overflowY = 'auto'; }
+                }
                 
                 // Create bar chart for TOP 10
                 const chartData = {
@@ -1037,7 +1284,13 @@
                             callbacks: {
                                 label: function(ctx) {
                                     const val = ctx.raw;
-                                    return isGmv ? ' $' + val.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' ' + val.toLocaleString() + ' 件';
+                                    let title = '';
+                                    if (isSkuChart) {
+                                        const skuId = top10[ctx.dataIndex] ? top10[ctx.dataIndex].item : '';
+                                        const nm = (salesTrendData.sku_product_name_map && salesTrendData.sku_product_name_map[skuId]) || skuId;
+                                        title = skuDisplay(skuId) + '  ' + nm + '\n';
+                                    }
+                                    return title + (isGmv ? ' $' + val.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' ' + val.toLocaleString() + ' 件');
                                 }
                             }
                         }
@@ -1179,6 +1432,16 @@
         XLSX.writeFile(wb, fname);
     }
 
+    function skuDisplay(sku) {
+        // Always show the full SKU ID with the P0122001_S_ store prefix (daily reports have it stripped)
+        const s = String(sku || '');
+        return s.indexOf('P0122001_S_') === 0 ? s : 'P0122001_S_' + s;
+    }
+    function skuHref(sku) {
+        // HKTVmall product URL needs the full prefixed SKU (bare style SKU returns 404 'Oops')
+        const full = String(sku || '').indexOf('P0122001_S_') === 0 ? sku : 'P0122001_S_' + sku;
+        return 'https://www.hktvmall.com/hktv/p/' + full;
+    }
     function renderSalesTable(chartName, config, data) {
         const container = document.getElementById('salesTableContainer');
         if (!container) return;
@@ -1203,7 +1466,7 @@
             allBrands.sort();
             if (allBrands.length > 1) {
                 filterHtml += '<div class="col-auto"><select id="tableBrandFilter" class="form-select form-select-sm" style="width:auto;min-width:120px;" onchange="filterSalesTable()"><option value="">所有品牌</option>';
-                allBrands.forEach(b => { filterHtml += '<option value="' + b + '">' + b + '</option>'; });
+                allBrands.forEach(b => { filterHtml += '<option value="' + esc(b) + '">' + esc(b) + '</option>'; });
                 filterHtml += '</select></div>';
             }
         }
@@ -1231,6 +1494,68 @@ if (isSkuChart) html += '<th class="text-start">SKU ID</th><th class="text-start
         else html += '<th class="text-start">日期</th><th class="text-end">GMV</th>';
         html += '</tr></thead><tbody></tbody></table></div>';
         container.innerHTML = html;
+
+        // Fill table rows with data (fix: tbody was empty in original template)
+        const tbodyEl = document.querySelector('#salesTableEl tbody');
+        if (tbodyEl) {
+            let rowsHtml = '';
+            const fmtVal = (v) => isQty
+                ? Number(v).toLocaleString() + ' 件'
+                : '$' + Number(v).toLocaleString(undefined, {minimumFractionDigits: 2});
+            if (isSkuChart) {
+                // Aggregate per SKU across filtered dates, sort desc
+                const items = data.skus || [];
+                const totals = items.map((sku, idx) => {
+                    let sum = 0;
+                    (data.data || []).forEach(row => { if (row && row[idx] !== undefined) sum += row[idx]; });
+                    return { sku, sum };
+                }).filter(t => t.sum > 0).sort((a, b) => b.sum - a.sum);
+                const nameMap = salesTrendData.sku_product_name_map || salesTrendData.sku_name_map || {};
+                totals.forEach(t => {
+                    const brand = (salesTrendData.sku_brand_map && salesTrendData.sku_brand_map[t.sku]) || 'SKECHERS';
+                    const nm = nameMap[t.sku] || t.sku;
+                    rowsHtml += '<tr data-brand="' + esc(brand) + '" data-search="' + esc((skuDisplay(t.sku) + ' ' + nm + ' ' + brand).toLowerCase()) + '">'
+                        + '<td><a href="' + esc(skuHref(t.sku)) + '" target="_blank" class="text-decoration-none"><code>' + esc(skuDisplay(t.sku)) + '</code></a></td><td>' + esc(brand) + '</td><td>' + esc(nm) + '</td><td class="text-end">' + fmtVal(t.sum) + '</td></tr>';
+                });
+            } else if (isBrandChart) {
+                const brands = data.brands || [];
+                const totals = brands.map((b, idx) => {
+                    let sum = 0;
+                    (data.data || []).forEach(row => { if (row && row[idx] !== undefined) sum += row[idx]; });
+                    return { b, sum };
+                }).filter(t => t.sum > 0).sort((a, b) => b.sum - a.sum);
+                totals.forEach(t => {
+                    rowsHtml += '<tr data-brand="' + esc(t.b) + '" data-search="' + esc(t.b.toLowerCase()) + '">'
+                        + '<td>' + esc(t.b) + '</td><td class="text-end">' + fmtVal(t.sum) + '</td></tr>';
+                });
+            } else {
+                // Date / Month / Hour / DayOfWeek charts: label + value rows
+                const labels = data.labels || [];
+                const vals = data.data || [];
+                labels.forEach((l, i) => {
+                    const v = vals[i];
+                    if (v === undefined || v === null || v === 0) return;
+                    rowsHtml += '<tr data-brand="" data-search="' + String(l).toLowerCase() + '">'
+                        + '<td class="text-start">' + l + '</td><td class="text-end">' + fmtVal(v) + '</td></tr>';
+                });
+            }
+            tbodyEl.innerHTML = rowsHtml;
+            // Add tfoot total row if missing
+            if (!container.querySelector('#salesTableEl tfoot')) {
+                const totalRow = document.createElement('tfoot');
+                let totalVal = 0;
+                tbodyEl.querySelectorAll('tr').forEach(tr => {
+                    const cells = tr.cells;
+                    const txt = cells[cells.length - 1]?.textContent || '';
+                    const m2 = txt.match(/[\d,]+\.?\d*/);
+                    if (m2) totalVal += parseFloat(m2[0].replace(/,/g, ''));
+                });
+                if (isSkuChart) totalRow.innerHTML = '<tr><td colspan="3" class="text-end fw-bold">合計</td><td class="text-end fw-bold">' + fmtVal(totalVal) + '</td></tr>';
+                else if (isBrandChart) totalRow.innerHTML = '<tr><td class="text-end fw-bold">合計</td><td class="text-end fw-bold">' + fmtVal(totalVal) + '</td></tr>';
+                else totalRow.innerHTML = '<tr><td class="text-end fw-bold">合計</td><td class="text-end fw-bold">' + fmtVal(totalVal) + '</td></tr>';
+                container.querySelector('#salesTableEl').appendChild(totalRow);
+            }
+        }
 
         // Initial filter count
         filterSalesTable();
@@ -1312,13 +1637,15 @@ if (isSkuChart) html += '<th class="text-start">SKU ID</th><th class="text-start
 
     function updateSalesSummary() {
         const summary = salesSummary || {};
-        // Helper to format month label like "JUL 2026"
+        // Helper to format month label like "JUL 2026" (or pass through "8月 2026")
         const formatMonthLabel = (monthStr) => {
             if (!monthStr) return '---';
+            // Already in "8月 2026" / "7月 2026" format — show as-is
+            if (!/^\d{4}-\d{2}$/.test(monthStr)) return monthStr;
             const [year, month] = monthStr.split('-');
             const monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
             const m = parseInt(month, 10);
-            return monthNames[m - 1] + ' ' + year;
+            return (monthNames[m - 1] || month) + ' ' + year;
         };
         // Update month labels
         const labelEl = document.getElementById('stThisMonthLabel');
@@ -1389,8 +1716,8 @@ if (isSkuChart) html += '<th class="text-start">SKU ID</th><th class="text-start
         if (!dates.length) return '<span class="text-muted">—</span>';
         // Button: click opens popup chart with daily price history (PSP preferred, RSP fallback)
         return '<button type="button" class="btn btn-sm btn-outline-primary trend-btn" '
-            + 'data-sku="' + sku + '" '
-            + 'onclick="showTrendPopup(\'' + sku + '\', this)" '
+            + 'data-sku="' + esc(sku) + '" '
+            + 'onclick="showTrendPopup(\'' + escJs(sku) + '\', this)" '
             + 'title="每日價格動向 — 撳掣睇折線圖 (PSP 冇數用 RSP)">'
             + '<span class="fw-bold">價格動向</span></button>';
     }
@@ -1492,13 +1819,13 @@ if (isSkuChart) html += '<th class="text-start">SKU ID</th><th class="text-start
         const brandSel = document.getElementById('filterPriceBrand');
         if (brandSel) {
             const brands = [...new Set(priceCheckData.map(r => r.brand).filter(Boolean))].sort();
-            brandSel.innerHTML = '<option value="all">全部品牌</option>' + brands.map(b => '<option value="' + b + '">' + b + '</option>').join('');
+            brandSel.innerHTML = '<option value="all">全部品牌</option>' + brands.map(b => '<option value="' + esc(b) + '">' + esc(b) + '</option>').join('');
         }
         tbody.innerHTML = priceCheckData.map(r => {
             const name = r.name_chi || r.name_en || '';
             const off = r.official_price !== null && r.official_price !== undefined;
             const offCell = off
-                ? '<a href="' + r.official_url + '" target="_blank" class="text-decoration-none fw-bold" title="' + (r.official_name || '') + '">' + fmtPrice(r.official_price) + '</a>'
+                ? '<a href="' + esc(r.official_url) + '" target="_blank" class="text-decoration-none fw-bold" title="' + esc(r.official_name || '') + '">' + fmtPrice(r.official_price) + '</a>'
                 : '<span class="text-muted">—</span>';
             const dc = fmtDiff(r.diff, r.compare_price, r.psp, r.rsp, r.official_price);
             // Price delta category for filter: up / down / flat / none
@@ -1508,18 +1835,18 @@ if (isSkuChart) html += '<th class="text-start">SKU ID</th><th class="text-start
                 else if (r.diff < 0) pricedelta = 'down';
                 else pricedelta = 'flat';
             }
-            const skuLink = '<a href="https://www.hktvmall.com/hktv/p/' + r.link_sku + '" target="_blank"><code>' + r.sku + '</code></a>';
-            return '<tr data-brand="' + (r.brand || '') + '" data-pricedelta="' + pricedelta + '">'
+            const skuLink = '<a href="https://www.hktvmall.com/hktv/p/' + esc(r.link_sku) + '" target="_blank"><code>' + esc(r.sku) + '</code></a>';
+            return '<tr data-brand="' + esc(r.brand || '') + '" data-pricedelta="' + pricedelta + '">'
                 + '<td>' + skuLink + '</td>'
-                + '<td>' + (r.brand || '—') + '</td>'
-                + '<td title="' + name + '">' + (name.length > 50 ? name.slice(0, 50) + '…' : name) + '</td>'
+                + '<td>' + esc(r.brand || '—') + '</td>'
+                + '<td title="' + esc(name) + '">' + (name.length > 50 ? esc(name.slice(0, 50)) + '…' : esc(name)) + '</td>'
                 + '<td class="text-end">' + fmtPrice(r.rsp) + '</td>'
                 + '<td class="text-end">' + fmtPrice(r.psp) + '</td>'
                 + '<td class="text-end fw-bold">' + offCell + '</td>'
                 + '<td class="text-end">' + dc.amount + '</td>'
                 + '<td class="text-center">' + trendCell(r.sku) + '</td>'
                 + '<td class="text-center">' + dc.text + '</td>'
-                + '<td class="text-muted">' + (r.status || '') + '</td>'
+                + '<td class="text-muted">' + esc(r.status || '') + '</td>'
                 + '</tr>';
         }).join('');
         const matched = priceCheckData.filter(r => r.official_price !== null && r.official_price !== undefined).length;
@@ -1550,7 +1877,7 @@ if (isSkuChart) html += '<th class="text-start">SKU ID</th><th class="text-start
     }
     async function loadPriceCheck() {
         try {
-            const res = await fetch('data/price_check_data.json?' + Date.now());
+            const res = await dataFetch('data/price_check_data.json');
             priceCheckData = await res.json();
         } catch (e) {
             console.error('loadPriceCheck failed', e);
@@ -1561,7 +1888,7 @@ if (isSkuChart) html += '<th class="text-start">SKU ID</th><th class="text-start
 
     async function loadPspHistory() {
         try {
-            const res = await fetch('data/psp_history.json?' + Date.now());
+            const res = await dataFetch('data/psp_history.json');
             pspHistory = await res.json();
         } catch (e) {
             console.error('loadPspHistory failed', e);
@@ -1593,26 +1920,32 @@ if (isSkuChart) html += '<th class="text-start">SKU ID</th><th class="text-start
         normal: '<span class="badge badge-normal">🟢 Normal (10-49)</span>',
         high: '<span class="badge badge-high">🔵 High (50+)</span>'
     };
+    function esc(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    function escJs(s) {
+        return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
     function invRow(e) {
         const name = e.name_chi || e.name_en || '';
         const link = e.link_sku ? e.link_sku : e.sku;
-        return '<tr data-brand="' + (e.brand || '') + '" onclick="showDetail(\'' + e.sku + '\',\'' + name.replace(/'/g, "\\'") + '\',' + e.stock + ',\'' + e.status + '\')">'
-            + '<td><a href="https://www.hktvmall.com/hktv/p/' + link + '" target="_blank" onclick="event.stopPropagation()"><code>' + e.sku + '</code></a></td>'
-            + '<td title="' + name + '">' + (name.length > 60 ? name.slice(0, 60) + '…' : name) + '</td>'
+        return '<tr data-brand="' + esc(e.brand || '') + '" onclick="showDetail(\'' + escJs(e.sku) + '\',\'' + escJs(name) + '\',' + e.stock + ',\'' + escJs(e.status) + '\')">'
+            + '<td><a href="https://www.hktvmall.com/hktv/p/' + esc(link) + '" target="_blank" onclick="event.stopPropagation()"><code>' + esc(e.sku) + '</code></a></td>'
+            + '<td title="' + esc(name) + '">' + (name.length > 60 ? esc(name.slice(0, 60)) + '…' : esc(name)) + '</td>'
             + '<td class="text-end">' + e.stock.toLocaleString() + '</td>'
             + '<td>' + badgeMap[e.status] + '</td>'
-            + '<td class="text-muted" style="font-size:0.75rem">' + (e.brand || '') + '</td>'
+            + '<td class="text-muted" style="font-size:0.75rem">' + esc(e.brand || '') + '</td>'
             + '</tr>';
     }
     function invRowMini(e, withBrand) {
         const name = e.name_chi || e.name_en || '';
         const link = e.link_sku ? e.link_sku : e.sku;
-        let out = '<tr data-brand="' + (e.brand || '') + '" onclick="showDetail(\'' + e.sku + '\',\'' + name.replace(/'/g, "\\'") + '\',' + e.stock + ',\'' + e.status + '\')">'
-            + '<td><a href="https://www.hktvmall.com/hktv/p/' + link + '" target="_blank" onclick="event.stopPropagation()"><code>' + e.sku + '</code></a></td>'
-            + '<td title="' + name + '">' + (name.length > 40 ? name.slice(0, 40) + '…' : name) + '</td>'
+        let out = '<tr data-brand="' + esc(e.brand || '') + '" onclick="showDetail(\'' + escJs(e.sku) + '\',\'' + escJs(name) + '\',' + e.stock + ',\'' + escJs(e.status) + '\')">'
+            + '<td><a href="https://www.hktvmall.com/hktv/p/' + esc(link) + '" target="_blank" onclick="event.stopPropagation()"><code>' + esc(e.sku) + '</code></a></td>'
+            + '<td title="' + esc(name) + '">' + (name.length > 40 ? esc(name.slice(0, 40)) + '…' : esc(name)) + '</td>'
             + '<td class="text-end">' + e.stock.toLocaleString() + '</td>'
             + '<td>' + badgeMap[e.status] + '</td>';
-        if (withBrand) out += '<td class="text-muted" style="font-size:0.75rem">' + (e.brand || '') + '</td>';
+        if (withBrand) out += '<td class="text-muted" style="font-size:0.75rem">' + esc(e.brand || '') + '</td>';
         out += '</tr>';
         return out;
     }
@@ -1652,7 +1985,7 @@ if (isSkuChart) html += '<th class="text-start">SKU ID</th><th class="text-start
             const sel = document.getElementById(id);
             if (!sel) return;
             const cur = sel.value;
-            sel.innerHTML = '<option value="all">All Brands</option>' + brands.map(b => '<option value="' + b + '">' + b + '</option>').join('');
+            sel.innerHTML = '<option value="all">All Brands</option>' + brands.map(b => '<option value="' + esc(b) + '">' + esc(b) + '</option>').join('');
             if (brands.includes(cur)) sel.value = cur;
         };
         fillBrandSel('brandAll'); fillBrandSel('brandSku'); fillBrandSel('brandNewSku');
@@ -1683,49 +2016,88 @@ if (isSkuChart) html += '<th class="text-start">SKU ID</th><th class="text-start
     function renderCategories() {
         const catType = {}, catFull = {};
         invData.styles.forEach(e => {
-            const type = e.category ? e.category.slice(0, 2) : '';
+            const type = e.category ? e.category.slice(0, 4) : '';
             const full = e.category || '';
             const typeName = e.category_name || '';
-            // type level: code = 2-char prefix
-            const t = catType[type] || (catType[type] = {name: typeName, code: type, count: 0, stock: 0, zero: 0, low: 0});
-            t.count++; t.stock += e.stock;
-            if (e.status === 'zero') t.zero++;
-            if (e.status === 'low') t.low++;
-            const f = catFull[full] || (catFull[full] = {name: typeName, code: full, count: 0, stock: 0, zero: 0, low: 0});
-            f.count++; f.stock += e.stock;
-            if (e.status === 'zero') f.zero++;
-            if (e.status === 'low') f.low++;
+            // type level: code = 4-char prefix (AA26 / AA30 / AA22 / AA73 大類)
+            const t = catType[type] || (catType[type] = {name: typeName, code: type, count: 0, stock: 0, zero: 0, low: 0, normal: 0, high: 0, online: 0, offline: 0, invisible: 0, visible: 0, foos: 0, avail: 0});
+            const f = catFull[full] || (catFull[full] = {name: typeName, code: full, count: 0, stock: 0, zero: 0, low: 0, normal: 0, high: 0, online: 0, offline: 0, invisible: 0, visible: 0, foos: 0, avail: 0});
+            [t, f].forEach(x => {
+                x.count++; x.stock += e.stock;
+                if (e.status === 'zero') x.zero++;
+                else if (e.status === 'low') x.low++;
+                else if (e.status === 'normal') x.normal++;
+                else if (e.status === 'high') x.high++;
+                if (e.online) x.online++; else x.offline++;
+                if (e.invisible) x.invisible++; else x.visible++;
+                if (e.foos) x.foos++; else x.avail++;
+            });
         });
         const typeBody = document.getElementById('categoryTypeBody');
         const fullBody = document.getElementById('categoryFullBody');
-        const catRow = (c) => '<tr data-online="" data-invisible="" data-foos=""><td>' + (c.name || '') + '</td><td><code>' + c.code + '</code></td>'
+        const catRow = (c) => '<tr data-online="' + (c.online > 0 ? 'online' : 'offline') + '" data-invisible="' + (c.invisible > 0 ? 'Y' : 'N') + '" data-foos="' + (c.foos > 0 ? 'Y' : 'N') + '">'
+            + '<td>' + esc(c.name || '') + '</td><td><code>' + esc(c.code) + '</code></td>'
             + '<td class="text-center">' + c.count + '</td><td class="text-end">' + c.stock.toLocaleString() + '</td>'
-            + '<td class="text-center text-danger">' + c.zero + '</td><td class="text-center text-warning">' + c.low + '</td></tr>';
+            + '<td class="text-center text-danger">' + c.zero + '</td><td class="text-center text-warning">' + c.low + '</td>'
+            + '<td class="text-center">' + c.normal + '</td><td class="text-center text-primary">' + c.high + '</td>'
+            + '<td class="text-center"><span class="text-success">' + c.online + '</span> / <span class="text-muted">' + c.offline + '</span></td>'
+            + '<td class="text-center"><span class="text-warning">' + c.invisible + '</span> / ' + c.visible + '</td>'
+            + '<td class="text-center"><span class="text-danger">' + c.foos + '</span> / ' + c.avail + '</td></tr>';
         if (typeBody) typeBody.innerHTML = Object.values(catType).map(catRow).join('');
         if (fullBody) fullBody.innerHTML = Object.values(catFull).map(catRow).join('');
         const cc = document.getElementById('categoryCount');
         if (cc) cc.textContent = Object.keys(catType).length + ' category types';
     }
     function renderSkuStatus() {
-        const c = invData.counts || {};
-        const online = invData.styles.filter(e => e.online);
-        const invis = invData.styles.filter(e => e.invisible);
-        const foos = invData.styles.filter(e => e.foos);
         const pane = document.getElementById('skustatus');
         if (!pane) return;
-        const tbodies = pane.querySelectorAll('tbody');
-        if (tbodies.length >= 3) {
-            tbodies[0].innerHTML = online.map(e => invRowMini(e, false)).join('');
-            tbodies[1].innerHTML = invis.map(e => invRowMini(e, false)).join('');
-            tbodies[2].innerHTML = foos.map(e => invRowMini(e, false)).join('');
-        }
-        // card headers
-        const spans = pane.querySelectorAll('span.text-dark');
-        if (spans.length >= 3) {
-            spans[0].textContent = (c.online || 0) + ' online / ' + ((c.total || 0) - (c.online || 0)) + ' offline';
-            spans[1].textContent = (c.invisible || 0) + ' Y / ' + ((c.total || 0) - (c.invisible || 0)) + ' N';
-            spans[2].textContent = (c.foos || 0) + ' Y / ' + ((c.total || 0) - (c.foos || 0)) + ' N';
-        }
+        const all = invData.styles || [];
+        const cards = [
+            { fid: 'skuStatusFilter0', bid: 'skuStatusBody0', cid: 'skuStatusCount0', yes: '🌐 Online', no: '⚫ Offline', flag: e => !!e.online, sortP: e => (e.online ? 1 : 0) },
+            { fid: 'skuStatusFilter1', bid: 'skuStatusBody1', cid: 'skuStatusCount1', yes: '👁️ Invisible', no: '✅ Visible', flag: e => !!e.invisible, sortP: e => (e.invisible ? 0 : 1) },
+            { fid: 'skuStatusFilter2', bid: 'skuStatusBody2', cid: 'skuStatusCount2', yes: '🚫 Force OOS', no: '✅ Available', flag: e => !!e.foos, sortP: e => (e.foos ? 0 : 1) },
+        ];
+        cards.forEach(cfg => {
+            const yes = all.filter(e => cfg.flag(e));
+            const no = all.filter(e => !cfg.flag(e));
+            const cnt = document.getElementById(cfg.cid);
+            if (cnt) cnt.textContent = yes.length + ' ' + cfg.yes + ' / ' + no.length + ' ' + cfg.no;
+            const f = document.getElementById(cfg.fid);
+            const v = f ? f.value : 'all';
+            const rows = (v === 'all' ? all.slice() : (v === 'yes' ? yes : no));
+            rows.sort((a, b) => cfg.sortP(a) - cfg.sortP(b));
+            const body = document.getElementById(cfg.bid);
+            if (body) body.innerHTML = rows.map(e => {
+                const y = cfg.flag(e);
+                const st = y ? cfg.yes : cfg.no;
+                const name = e.name_chi || e.name || '';
+                const link = e.link_sku ? e.link_sku : e.sku;
+                return '<tr onclick="showDetail(\'' + escJs(e.sku) + '\',\'' + escJs(name) + '\',' + e.stock + ',\'' + escJs(e.status) + '\')">'
+                    + '<td><a href="https://www.hktvmall.com/hktv/p/' + esc(link) + '" target="_blank" onclick="event.stopPropagation()"><code>' + esc(e.sku) + '</code></a></td>'
+                    + '<td title="' + esc(name) + '">' + (name.length > 40 ? esc(name.slice(0, 40)) + '…' : esc(name)) + '</td>'
+                    + '<td class="text-end">' + e.stock.toLocaleString() + '</td>'
+                    + '<td class="' + (y ? 'text-success' : 'text-muted') + '">' + st + '</td></tr>';
+            }).join('');
+        });
+    }
+    function downloadSkuStatusExcel() {
+        if (!invData || !invData.styles) return;
+        const rows = [['SKU', 'Product', 'Brand', 'Stock', 'Online Status', 'Invisible', 'Force OOS']];
+        (invData.styles || []).forEach(e => {
+            rows.push([
+                e.sku, e.name_chi || e.name || '', e.brand || '', e.stock,
+                e.online ? 'Online' : 'Offline',
+                e.invisible ? 'Invisible' : 'Visible',
+                e.foos ? 'Force OOS' : 'Available'
+            ]);
+        });
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        ws['!cols'] = [{wch: 22}, {wch: 45}, {wch: 14}, {wch: 8}, {wch: 14}, {wch: 12}, {wch: 12}];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'SKU Status');
+        const d = new Date();
+        const ds = d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
+        XLSX.writeFile(wb, 'P0122001_SkuStatus_' + ds + '.xlsx');
     }
     function renderAlerts() {
         const zero = invData.styles.filter(e => e.status === 'zero');
@@ -1752,9 +2124,31 @@ if (isSkuChart) html += '<th class="text-start">SKU ID</th><th class="text-start
         if (cnt) cnt.textContent = '🆕 New SKU (' + nw.length + ')';
         updateNewSkuBrands();
     }
+    // 🔒 Private data (B pilot): worker + HMAC session cookie
+    const DATA_WORKER = 'https://fificheck-access-gate.fificheck.workers.dev/data?site=P0122001&path=';
+    function dataFetch(p) {
+      return fetch(DATA_WORKER + encodeURIComponent(p) + '&v=' + Date.now(), { credentials: 'include' });
+    }
+    async function loadSession() {
+      const saved = localStorage.getItem('p012_gate_email');
+      if (!saved) throw new Error('no gate email');
+      const r = await fetch('https://fificheck-access-gate.fificheck.workers.dev/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ site: 'P0122001', email: saved }),
+        credentials: 'include'
+      });
+      if (!r.ok) throw new Error('session ' + r.status);
+    }
+    async function loadSalesTrend() {
+      try {
+        const res = await dataFetch('data/sales_trend_data.json');
+        if (res.ok) { salesTrendData = await res.json(); }
+      } catch (e) { console.error('sales trend load failed', e); }
+    }
     async function loadInventory() {
         try {
-            const res = await fetch('data/inventory_data.json?' + Date.now());
+            const res = await dataFetch('data/inventory_data.json');
             invData = await res.json();
             // build brands map
             const brands = {};
@@ -1770,7 +2164,90 @@ if (isSkuChart) html += '<th class="text-start">SKU ID</th><th class="text-start
         }
         renderInventory();
     }
-    loadInventory();
+    // ========== Report tab: download tables from report_manifest.json ==========
+    async function loadReports() {
+        let manifest = {inventory_reports: [], order_reports: []};
+        try {
+            const res = await dataFetch('data/report_manifest.json');
+            manifest = await res.json();
+        } catch (e) {
+            console.error('loadReports failed', e);
+        }
+        const repoUrl = 'https://fificheck-access-gate.fificheck.workers.dev/data?site=P0122001&path=';
+        // Inventory report table (first tbody in #report pane)
+        const pane = document.getElementById('report');
+        if (pane) {
+            const tbodies = pane.querySelectorAll('tbody');
+            const fmtSize = (n) => n > 1048576 ? (n/1048576).toFixed(1)+'MB' : n > 1024 ? (n/1024).toFixed(0)+'KB' : n+'B';
+            if (tbodies.length >= 1) {
+                tbodies[0].innerHTML = (manifest.inventory_reports || []).map(r =>
+                    '<tr><td>' + r.date + '</td><td class="text-center">' + r.time + '</td><td class="text-end">' + (r.skus || '').toLocaleString() + '</td>'
+                    + '<td><a href="' + repoUrl + 'reports/' + r.file + '" target="_blank" class="btn btn-sm btn-outline-primary">⬇️ 下載 (' + fmtSize(r.size) + ')</a></td></tr>'
+                ).join('') || '<tr><td colspan="4" class="text-center text-muted py-3">暫無庫存報告</td></tr>';
+            }
+            if (tbodies.length >= 2) {
+                tbodies[1].innerHTML = (manifest.order_reports || []).map(r =>
+                    '<tr><td>' + (r.date_label || r.date) + '</td><td class="text-center">' + r.time + '</td><td class="text-end">' + (r.gmv != null ? '$' + r.gmv.toLocaleString(undefined, {minimumFractionDigits: 2}) : '—') + '</td>'
+                    + '<td><a href="' + repoUrl + 'reports/order_reports/' + r.file + '" target="_blank" class="btn btn-sm btn-outline-primary">⬇️ 下載 (' + fmtSize(r.size) + ')</a></td></tr>'
+                ).join('') || '<tr><td colspan="4" class="text-center text-muted py-3">暫無訂單報告</td></tr>';
+            }
+            // Update order report date in header
+            const ord = manifest.order_reports && manifest.order_reports[0];
+            const od = document.getElementById('orderReportDate');
+            if (od && ord) od.textContent = ord.date + ' (' + ord.time + ')';
+        }
+    }
+    // 🔒 Access gate (H6183001 pattern: email 申請 → admin approve → allowlist)
+    const ALLOWLIST_URL = 'data/access_allowlist.json';
+    const GATE_ADMIN_EMAIL = 'jerry@hktv.com.hk';   // 收訪問申請通知
+    async function initGate() {
+        const gate = document.getElementById('access-gate');
+        const status = document.getElementById('gate-status');
+        const saved = localStorage.getItem('p012_gate_email');
+        let list = [];
+        try {
+            const r = await fetch(ALLOWLIST_URL + '?v=' + Date.now());
+            if (r.ok) list = await r.json();
+        } catch (e) { /* offline — fall through to gate */ }
+        const norm = list.map(String).map(function(s) { return s.trim().toLowerCase(); });
+        if (saved && norm.indexOf(saved.toLowerCase()) >= 0) {
+            gate.style.display = 'none';
+            return;
+        }
+        gate.style.display = 'flex';
+        const input = document.getElementById('gate-email');
+        async function submitGateRequest() {
+            const email = input.value.trim();
+            if (!email || email.indexOf('@') < 1) { status.textContent = '⚠️ 請輸入有效 Email'; return; }
+            status.textContent = '⏳ 送出申請中…';
+            try {
+                await fetch('https://fificheck-access-gate.fificheck.workers.dev/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ site: 'P0122001', email: email })
+                });
+                localStorage.setItem('p012_gate_email', email.toLowerCase());
+                status.textContent = '✅ 已送出申請！管理員一撳批准，你重新整理此頁即可進入。';
+            } catch (e) {
+                status.textContent = '❌ 送出失敗 — 請直接 email ' + GATE_ADMIN_EMAIL;
+            }
+        }
+        document.getElementById('gate-submit').addEventListener('click', submitGateRequest);
+        input.addEventListener('keydown', function(ev) { if (ev.key === 'Enter') submitGateRequest(); });
+    }
+    initGate();
+    // B pilot: 攞 session cookie 先，再 load data（private repo 要 auth）
+    loadSession()
+      .then(function () {
+        loadInventory();
+        loadSalesTrend();
+      })
+      .catch(function (e) {
+        console.error('session init failed', e);
+        var gs = document.getElementById('gate-status');
+        if (gs) gs.textContent = '⚠️ 請先完成訪問申請（email 未授權或 session 過期）';
+      });
+    loadReports();
     </script>
 
 </body>

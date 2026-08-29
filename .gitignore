@@ -3,3 +3,6 @@ __pycache__/
 
 # sensitive: 107-store GMV snapshot - keep local only
 data/jerry_sku_data_full.json
+
+# backup files (cleanup 2026-08-29)
+*.bak

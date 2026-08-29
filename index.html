@@ -2241,13 +2241,13 @@ if (isSkuChart) html += '<th class="text-start">SKU ID</th><th class="text-start
         loadSalesTrend();
         loadPriceCheck();
         loadPspHistory();
+        loadReports();
       })
       .catch(function (e) {
         console.error('session init failed', e);
         var gs = document.getElementById('gate-status');
         if (gs) gs.textContent = '⚠️ 請先完成訪問申請（email 未授權或 session 過期）';
       });
-    loadReports();
     </script>
 
 </body>

@@ -6,3 +6,9 @@ data/jerry_sku_data_full.json
 
 # backup files (cleanup 2026-08-29)
 *.bak
+
+# B pilot (2026-08-29): data/reports 移去 private repo (dashboard-private-data)
+# 唔好再 track 任何 data/reports 檔落 public repo
+data/*
+!data/access_allowlist.json
+reports/*

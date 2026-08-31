@@ -128,6 +128,8 @@
             <h2>🔒 受保護的 Dashboard</h2>
             <p>此 Dashboard 只供獲授權人士查閱。<br>請輸入你的 Email 申請訪問權限，管理員批准後即可進入。</p>
             <input type="email" id="gate-email" placeholder="你的 Email" autocomplete="email">
+            <input type="text" id="gate-reason" placeholder="申請原因（例：需查閱庫存數據）" maxlength="200" style="width:100%;padding:10px 14px;border:1px solid #cbd5e1;border-radius:8px;font-size:1rem;margin-top:8px;box-sizing:border-box;">
+            <input type="text" id="gate-purpose" placeholder="用途（例：日常營運分析）" maxlength="200" style="width:100%;padding:10px 14px;border:1px solid #cbd5e1;border-radius:8px;font-size:1rem;margin-top:8px;box-sizing:border-box;">
             <button id="gate-submit">申請訪問</button>
             <p id="gate-status"></p>
         </div>
@@ -2232,7 +2234,7 @@ if (isSkuChart) html += '<th class="text-start">SKU ID</th><th class="text-start
                 await fetch('https://fificheck-access-gate.fificheck.workers.dev/submit', {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({ site: 'P0122001', email: email })
+                    body: JSON.stringify({ site: 'P0122001', email: email, reason: (document.getElementById('gate-reason').value || '').trim(), purpose: (document.getElementById('gate-purpose').value || '').trim() })
                 });
                 localStorage.setItem('p012_gate_email', email.toLowerCase());
                 status.textContent = '✅ 已送出申請！管理員一撳批准，你重新整理此頁即可進入。';

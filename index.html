@@ -2131,7 +2131,9 @@ if (isSkuChart) html += '<th class="text-start">SKU ID</th><th class="text-start
     // 🔒 Private data (B pilot): worker + HMAC session cookie
     const DATA_WORKER = 'https://fificheck-access-gate.fificheck.workers.dev/data?site=P0122001&path=';
     function dataFetch(p) {
-      return fetch(DATA_WORKER + encodeURIComponent(p) + '&v=' + Date.now(), { credentials: 'include' });
+      var _tk = null; try { _tk = localStorage.getItem('p012_gate_token'); } catch(e) {}
+      var _hdrs = _tk ? { 'X-SB-Token': _tk } : {};
+      return fetch(DATA_WORKER + encodeURIComponent(p) + '&v=' + Date.now(), { credentials: 'include', headers: _hdrs });
     }
     async function loadSession() {
       const saved = localStorage.getItem('p012_gate_email');
@@ -2143,6 +2145,7 @@ if (isSkuChart) html += '<th class="text-start">SKU ID</th><th class="text-start
         credentials: 'include'
       });
       if (!r.ok) throw new Error('session ' + r.status);
+      try { const _d = await r.json(); if (_d && _d.token) localStorage.setItem('p012_gate_token', _d.token); } catch(e) {}
     }
     async function loadSalesTrend() {
       try {

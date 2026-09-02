@@ -13,6 +13,7 @@ NOTE: 2026-08 (August) still comes from jerry-dashboard monthly data (sku_data_f
 the Excel covers only Jan-Jul. Inject via inject_sales.py.
 """
 import openpyxl, json, os, re, glob
+import datetime as _dt
 
 REPO = os.path.expanduser('~/P0122001-Inventory-Dashboard')
 os.chdir(REPO)
@@ -157,10 +158,19 @@ def fmt(label, gmv, orders):
         'avg': round(gmv / orders, 2) if orders else 0,
     }
 
+# 動態月份 label（今日 = 當月；上月/上上月跟住 roll）— 修 2026-09-02 發現嘅硬code label bug
+_today = _dt.date.today()
+def _mlabel(offset_months):
+    total = _today.year * 12 + (_today.month - 1) - offset_months
+    yy, mm = divmod(total, 12)
+    return f"{mm + 1}月 {yy}"
+
+_sorted_months = sorted(ALL_MONTHS)
+_latest, _prev, _prev2 = _sorted_months[-1], _sorted_months[-2], _sorted_months[-3]
 summary = {
-    'this_month': fmt('8月 2026', monthly_gmv['2026-08'], 0),
-    'last_month': fmt('7月 2026', monthly_gmv['2026-07'], orders_by_month['2026-07']),
-    'month_before_last': fmt('6月 2026', monthly_gmv['2026-06'], orders_by_month['2026-06']),
+    'this_month': fmt(_mlabel(0), monthly_gmv[_latest], 0),
+    'last_month': fmt(_mlabel(1), monthly_gmv[_prev], orders_by_month.get(_prev, 0) or 0),
+    'month_before_last': fmt(_mlabel(2), monthly_gmv[_prev2], orders_by_month.get(_prev2, 0) or 0),
     'total_gmv': total_gmv,
     'total_orders': total_orders,
     'avg_order_value': avg_order_value,

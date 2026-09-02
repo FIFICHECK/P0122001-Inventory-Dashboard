@@ -143,6 +143,19 @@ if DATE_KEYS:
     except Exception as _e:
         print('summary roll skip:', _e)
 
+    # gmv_target (Tag 11): 當月 actual 用 daily 數據（GP monthly 未有當月 → 之前會係 0）
+    try:
+        _gt = sd.get('gmv_target')
+        if _gt and 'actual' in _gt and 'labels' in _gt:
+            _cm = f"{_today:%Y-%m}"
+            if _cm in _gt['labels']:
+                _idx = _gt['labels'].index(_cm)
+                _gmv_cur2 = round(sum(v for k, v in gmv_by_date.items() if k.startswith(_cm)), 2)
+                _gt['actual'][_idx] = _gmv_cur2
+                print(f"gmv_target actual[{_cm}] = {_gmv_cur2:,.2f}")
+    except Exception as _e2:
+        print('gmv_target update skip:', _e2)
+
 # available_months: add the daily dates' month if missing (2026-08 already there)
 for d in DATE_KEYS:
     mth = d[:7]

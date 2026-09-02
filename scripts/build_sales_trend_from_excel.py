@@ -158,19 +158,17 @@ def fmt(label, gmv, orders):
         'avg': round(gmv / orders, 2) if orders else 0,
     }
 
-# 動態月份 label（今日 = 當月；上月/上上月跟住 roll）— 修 2026-09-02 發現嘅硬code label bug
-_today = _dt.date.today()
-def _mlabel(offset_months):
-    total = _today.year * 12 + (_today.month - 1) - offset_months
-    yy, mm = divmod(total, 12)
-    return f"{mm + 1}月 {yy}"
-
+# summary 月份 label 由數據月份決定（唔硬code）— months[-1] = GP 最新月
 _sorted_months = sorted(ALL_MONTHS)
 _latest, _prev, _prev2 = _sorted_months[-1], _sorted_months[-2], _sorted_months[-3]
+def _data_label(m):
+    yy, mm = m.split('-')
+    return f"{int(mm)}月 {yy}"
+
 summary = {
-    'this_month': fmt(_mlabel(0), monthly_gmv[_latest], 0),
-    'last_month': fmt(_mlabel(1), monthly_gmv[_prev], orders_by_month.get(_prev, 0) or 0),
-    'month_before_last': fmt(_mlabel(2), monthly_gmv[_prev2], orders_by_month.get(_prev2, 0) or 0),
+    'this_month': fmt(_data_label(_latest), monthly_gmv[_latest], 0),
+    'last_month': fmt(_data_label(_prev), monthly_gmv[_prev], orders_by_month.get(_prev, 0) or 0),
+    'month_before_last': fmt(_data_label(_prev2), monthly_gmv[_prev2], orders_by_month.get(_prev2, 0) or 0),
     'total_gmv': total_gmv,
     'total_orders': total_orders,
     'avg_order_value': avg_order_value,

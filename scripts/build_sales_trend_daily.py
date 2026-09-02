@@ -120,6 +120,29 @@ if DATE_KEYS:
         summ['this_month']['orders'] = summ['daily_orders_total']
         summ['this_month']['avg'] = summ['avg_order_value_daily']
 
+    # ⚠️ Roll: 新月份開始（今日月份 > this_month label 月份）→ 成組搬落一格，當月用 daily 數據
+    # 例：GP 最新月係 8月 但今日已 9月 → 當月=9月(daily)、上月=8月、上上月=7月
+    try:
+        import re as _re
+        _today = datetime.date.today()
+        _tm = summ.get('this_month', {})
+        _m = _re.match(r'(\d+)月 (\d{4})', str(_tm.get('label', '')))
+        if _m and (int(_m.group(2)), int(_m.group(1))) < (_today.year, _today.month):
+            _cur_m = f"{_today:%Y-%m}"
+            _gmv_cur = round(sum(v for k, v in gmv_by_date.items() if k.startswith(_cur_m)), 2)
+            _ord_cur = int(sum(v for k, v in orders_by_date.items() if k.startswith(_cur_m)))
+            summ['month_before_last'] = summ.get('last_month', {'label': '', 'gmv': 0, 'orders': 0, 'avg': 0})
+            summ['last_month'] = dict(_tm)
+            summ['this_month'] = {
+                'label': f"{_today.month}月 {_today.year}",
+                'gmv': _gmv_cur,
+                'orders': _ord_cur,
+                'avg': round(_gmv_cur / _ord_cur, 2) if _ord_cur else 0,
+            }
+            print(f"summary roll: 當月→{summ['this_month']['label']} ({_gmv_cur:,.0f}), 上月→{summ['last_month']['label']}, 上上月→{summ['month_before_last']['label']}")
+    except Exception as _e:
+        print('summary roll skip:', _e)
+
 # available_months: add the daily dates' month if missing (2026-08 already there)
 for d in DATE_KEYS:
     mth = d[:7]

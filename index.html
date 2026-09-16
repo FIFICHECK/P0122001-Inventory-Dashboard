@@ -2186,7 +2186,9 @@ if (isSkuChart) html += '<th class="text-start">SKU ID</th><th class="text-start
         } catch (e) {
             console.error('loadReports failed', e);
         }
-        const repoUrl = 'https://fificheck-access-gate.fificheck.workers.dev/data?site=P0122001&path=';
+        // B pilot (2026-09-16): 下載改經 worker /download（/data 白名單唔准 reports/*）
+        const _dlEmail = encodeURIComponent(localStorage.getItem('p012_gate_email') || '');
+        const repoUrl = 'https://fificheck-access-gate.fificheck.workers.dev/download?site=P0122001&email=' + _dlEmail + '&file=';
         // Inventory report table (first tbody in #report pane)
         const pane = document.getElementById('report');
         if (pane) {

@@ -50,83 +50,6 @@ def process_mms(ws):
         orders_by_date[date] = len(parent_orders)
         DATE_KEYS.append(date)
 
-def process_exchange(ws, fname):
-    """Exchange format: rows start at row 6 (row 5 = headers), GMV at row 2 col 6.
-    Headers: Delivery Mode | Warehouse ID | Warehouse Name | Order ID | Sub-Order ID |
-             Shipment ID | Order Date | Order Time | Pickup Date | Pickup Time | Delivery Date |
-             ... (more columns) ... | Item Total | ... | Total Amount |
-    We use Order Date (col 7) + Sub-Order ID (col 5) + Item Total (col ~14?).
-    But Exchange format uses row-level items — each row = one item in an order.
-    To avoid double-counting GMV, we aggregate by (Order ID, Sub-Order ID) first.
-    """
-    # Find header row to map column positions
-    max_col = ws.max_column
-    headers = [ws.cell(5, c).value for c in range(1, max_col + 1)]
-    # Search for relevant columns
-    col_order_id = next((i for i, h in enumerate(headers, 1) if h and 'Order ID' in str(h) and 'Sub' not in str(h)), 4)
-    col_sub_order = next((i for i, h in enumerate(headers, 1) if h and 'Sub-Order' in str(h)), 5)
-    col_order_date = next((i for i, h in enumerate(headers, 1) if h and 'Order Date' in str(h)), 7)
-    col_qty = next((i for i, h in enumerate(headers, 1) if h and ('Qty' in str(h) or 'Quantity' in str(h))), None)
-    # Item Total or Total Amount
-    col_total = next((i for i, h in enumerate(headers, 1) if h and ('Item Total' in str(h) or 'Total Amount' in str(h) and 'Total Sales' not in str(h))), 14)
-
-    # Also get GMV from row 2 (Total Sales Amount Sum) as baseline validation
-    total_gmv_sheet = None
-    for c in range(1, max_col + 1):
-        v = ws.cell(2, c).value
-        if v and isinstance(v, (int, float)) and v > 1000:
-            total_gmv_sheet = v
-            break
-
-    # Aggregate: (order_id, sub_order_id) -> accumulated GMV/qty
-    order_key_map = defaultdict(lambda: {'gmv': 0.0, 'qty': 0, 'date': None, 'hour': 0})
-    seen_orders = set()
-    for r in range(6, ws.max_row + 1):
-        oid_raw = ws.cell(r, col_order_id).value
-        if oid_raw is None:
-            continue
-        oid = str(oid_raw)
-        sub_oid = str(ws.cell(r, col_sub_order).value or '')
-        key = (oid, sub_oid)
-        if key in seen_orders:
-            continue
-
-        od = ws.cell(r, col_order_date).value
-        if od is None:
-            continue
-        date = str(od)[:10]
-
-        qty_val = ws.cell(r, col_qty).value if col_qty else None
-        total_val = ws.cell(r, col_total).value if col_total else None
-        qty = int(qty_val) if qty_val else 0
-        total = float(total_val) if total_val else 0.0
-
-        order_key_map[key] = {'gmv': total, 'qty': qty, 'date': date}
-        seen_orders.add(key)
-
-    # Now DATE_KEYS = unique dates from Exchange file
-    dates_found = set(v['date'] for v in order_key_map.values() if v['date'])
-    for d in sorted(dates_found):
-        DATE_KEYS.append(d)
-
-    # Accumulate per order (not per row) to avoid double-counting
-    for info in order_key_map.values():
-        d = info['date']
-        if not d:
-            continue
-        total = info['gmv']
-        qty = info['qty']
-        # Get hour from first row of this order
-        for r in range(6, ws.max_row + 1):
-            if str(ws.cell(r, col_order_id).value or '') == str(order_key_map_inv(info, col_order_id)):
-                pass
-        hour = 12  # default midday
-        _accum(d, hour, '', '', qty, total)
-
-def order_key_map_inv(info, col_order_id):
-    """Helper — not used directly, Exchange uses set-based dedup."""
-    return ''
-
 def _accum(date, hour, sku, name, qty, total):
     """Shared accumulator — called by both MMS and Exchange processors."""
     gmv_by_date[date] += float(total)
@@ -151,14 +74,12 @@ for f in files:
     print("  ", os.path.basename(f))
 
 for f in files:
-    is_exchange = 'EXCH' in os.path.basename(f)
     try:
         wb = openpyxl.load_workbook(f, data_only=True)
         ws = wb.active
-        if is_exchange:
-            process_exchange(ws, os.path.basename(f))
-        else:
-            process_mms(ws)
+        # MMS + Exchange 格式 layout 完全相同（row 5 headers, col 7 Order Date, col 27 Total）
+        # — 實測 2026-09-28：Exchange 檔用 MMS parser 得出 $14,926.80，同檔案自身總數一致
+        process_mms(ws)
         print(f"  ✓ {os.path.basename(f)}")
     except Exception as e:
         print(f"  ✗ {os.path.basename(f)}: {e}")

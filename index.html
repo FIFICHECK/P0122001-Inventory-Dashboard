@@ -715,7 +715,8 @@
             dateSelect.appendChild(opt);
         });
         const monthSelect = document.getElementById('salesMonthFilter');
-        const months = salesTrendData.gmv_by_month.labels || [];
+        // B pilot fix (2026-09-28): 用 available_months（含 daily 新增月份如 2026-09），唔用 gmv_by_month.labels（GP Excel 只到 8月）
+        const months = [...new Set((salesTrendData.available_months || salesTrendData.gmv_by_month.labels || []))].sort().reverse();
         months.forEach(m => {
             const opt = document.createElement('option'); opt.value = m; opt.textContent = m;
             monthSelect.appendChild(opt);
@@ -754,11 +755,10 @@
             monthSelect.innerHTML = '<option value="">全部月份</option>';
             let filteredMonths;
             if (currentYearFilter) {
-                filteredMonths = [...new Set((salesTrendData.gmv_by_month.labels || []).filter(m => m.startsWith(currentYearFilter)))].sort().reverse();
+                filteredMonths = [...new Set((salesTrendData.available_months || []).filter(m => m.startsWith(currentYearFilter)))].sort().reverse();
             } else {
-                // Use available_months / gmv_by_month labels — ALL months, newest first (no display limit)
-                filteredMonths = [...new Set(salesTrendData.gmv_by_month.labels || [])].sort().reverse();
-
+                // Use available_months — ALL months including daily-added ones (2026-09 etc), newest first
+                filteredMonths = [...new Set(salesTrendData.available_months || [])].sort().reverse();
             }
             filteredMonths.forEach(m => {
                 const opt = document.createElement('option'); opt.value = m; opt.textContent = m;

@@ -57,6 +57,7 @@ def read_daily_gmv(name):
         return None
 
 def parse_order_file(name):
+    # MMS daily order reports
     m = re.match(r'ECOM-MMSNG_DAILY_ORDER_P0122001_(\d{8})(\d{6})\.xlsx$', name)
     if not m:
         m = re.match(r'ECOM-MMSNG_DAILY_ORDER_P0122001_(\d{8})(\d{6})\.xls$', name)
@@ -66,6 +67,32 @@ def parse_order_file(name):
         path = os.path.join('reports/order_reports', name)
         return {'date': date, 'time': time_raw, 'gmv': read_daily_gmv(name),
                 'file': name, 'size': os.path.getsize(path)}
+    # Exchange daily order reports: ECOM-EXCH_DAILY_ORDER_P0122001_YYYYMMDDHHMMSS.xlsx
+    m_exch = re.match(r'ECOM-EXCH_DAILY_ORDER_P0122001_(\d{8})\d{6}\.xlsx$', name)
+    if m_exch:
+        date_raw = m_exch.group(1)
+        date = f"{date_raw[:4]}-{date_raw[4:6]}-{date_raw[6:8]}"
+        path = os.path.join('reports/order_reports', name)
+        # GMV from Exchange file: row 2, col 6 (Total Sales Amount Sum)
+        exch_gmv = None
+        try:
+            import openpyxl
+        except ImportError:
+            import sys as _sys
+            _sys.path.insert(0, '/home/snkwok/.local/lib/python3.12/site-packages')
+            import openpyxl
+        try:
+            wb = openpyxl.load_workbook(path, data_only=True)
+            ws = wb.active
+            for c in range(1, ws.max_column + 1):
+                v = ws.cell(2, c).value
+                if isinstance(v, (int, float)) and v > 1000:
+                    exch_gmv = round(float(v), 2)
+                    break
+        except Exception:
+            exch_gmv = None
+        return {'date': date, 'time': '235959', 'gmv': exch_gmv,
+                'file': name, 'size': os.path.getsize(path), 'format': 'exchange'}
     # Monthly GMV reports (split from GP Report Excel): P0122001_GMV_Monthly_YYYYMM.xlsx
     m2 = re.match(r'P0122001_GMV_Monthly_(\d{6})\.xlsx$', name)
     if m2:

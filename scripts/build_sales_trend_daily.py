@@ -25,6 +25,7 @@ gmv_by_sku = defaultdict(lambda: defaultdict(float))
 qty_by_sku = defaultdict(lambda: defaultdict(int))
 sku_names = {}
 gmv_by_brand = defaultdict(lambda: defaultdict(float))
+gmv_date_hour = defaultdict(lambda: defaultdict(float))   # date -> hour -> gmv（chart 3 filter 用）
 DATE_KEYS = []
 
 def process_mms(ws):
@@ -55,6 +56,7 @@ def _accum(date, hour, sku, name, qty, total):
     gmv_by_date[date] += float(total)
     qty_by_date[date] += int(qty or 0)
     gmv_by_hour[hour] += float(total)
+    gmv_date_hour[date][hour] += float(total)
     try:
         dow = datetime.date.fromisoformat(date).weekday()
         gmv_by_dow[dow] += float(total)
@@ -114,7 +116,13 @@ for d in DATE_KEYS:
         pass
 
 sd['gmv_by_day_of_week'] = {'labels': dow_labels, 'data': dow_data}
-sd['gmv_by_date_hour'] = {'labels': DATE_KEYS, 'hours': [f"{h:02d}" for h in range(24)], 'data': {}}
+# gmv_by_date_hour: {date: [24 個鐘嘅 GMV array]} — chart 3 filter by date/month 用
+sd['gmv_by_date_hour'] = {
+    'labels': DATE_KEYS,
+    'hours': [f"{h:02d}" for h in range(24)],
+    'data': {d: [round(gmv_date_hour[d].get(h, 0), 2) for h in range(24)] for d in DATE_KEYS},
+}
+print(f"gmv_by_date_hour: {len(DATE_KEYS)} dates x 24 hours")
 
 # SKU daily: top SKUs by total GMV
 sku_totals = defaultdict(float)
@@ -181,6 +189,21 @@ if DATE_KEYS:
                 print(f"gmv_target actual[{_cm}] = {_gmv_cur2:,.2f}")
     except Exception as _e2:
         print('gmv_target update skip:', _e2)
+
+    # 當月 KPI 每次由 daily 重新計（唔好停留喺第一次 roll 嘅舊值）
+    try:
+        _now4 = datetime.date.today()
+        _lbl4 = f"{_now4.month}月 {_now4.year}"
+        if summ.get('this_month', {}).get('label') == _lbl4:
+            _cm4 = f"{_now4:%Y-%m}"
+            _gmv4 = round(sum(v for k, v in gmv_by_date.items() if k.startswith(_cm4)), 2)
+            _ord4 = int(sum(v for k, v in orders_by_date.items() if k.startswith(_cm4)))
+            summ['this_month']['gmv'] = _gmv4
+            summ['this_month']['orders'] = _ord4
+            summ['this_month']['avg'] = round(_gmv4 / _ord4, 2) if _ord4 else 0
+            print(f"this_month refresh: {_lbl4} GMV={_gmv4:,.2f} orders={_ord4}")
+    except Exception as _e4:
+        print('this_month refresh skip:', _e4)
 
     # gmv_by_month: 加入/更新當月 bucket（GP Excel 未有當月 → 用 daily 累計）
     # 令 monthly chart + month filter 揀當月時唔會空白

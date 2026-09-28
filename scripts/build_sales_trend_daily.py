@@ -261,6 +261,21 @@ if DATE_KEYS:
     except Exception as _e2:
         print('gmv_target update skip:', _e2)
 
+    # gmv_by_month: 加入/更新當月 bucket（GP Excel 未有當月 → 用 daily 累計）
+    # 令 monthly chart + month filter 揀當月時唔會空白
+    try:
+        _now3 = datetime.date.today()
+        _cm3 = f"{_now3:%Y-%m}"
+        _gmv_m3 = round(sum(v for k, v in gmv_by_date.items() if k.startswith(_cm3)), 2)
+        _gbm = sd.get('gmv_by_month') or {'labels': [], 'data': []}
+        _pairs = dict(zip(_gbm.get('labels', []), _gbm.get('data', [])))
+        _pairs[_cm3] = _gmv_m3
+        _sorted = sorted(_pairs.items())
+        sd['gmv_by_month'] = {'labels': [p[0] for p in _sorted], 'data': [p[1] for p in _sorted]}
+        print(f"gmv_by_month[{_cm3}] = {_gmv_m3:,.2f}")
+    except Exception as _e3:
+        print('gmv_by_month update skip:', _e3)
+
 # available_months
 for d in DATE_KEYS:
     mth = d[:7]

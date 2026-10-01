@@ -130,7 +130,7 @@ customers_by_month_out = {'labels': ALL_MONTHS, 'data': [customers_by_month[m] i
 
 # All SKUs by total GMV (no display limit — user preference)
 sku_totals = {sku: sum(v) for sku, v in merged_gmv.items()}
-top_skus = sorted(sku_totals, key=lambda x: -sku_totals[x])
+top_skus = sorted(sku_totals, key=lambda x: (-sku_totals[x], x))   # sku tie-break → 每次 run 結果一致
 sku_monthly_data = [[round(merged_gmv[s][i], 2) for s in top_skus] for i in range(8)]  # Month×SKU
 qty_sku_monthly_data = [[merged_qty[s][i] for s in top_skus] for i in range(8)]
 gmv_sku_monthly = {'labels': ALL_MONTHS, 'skus': top_skus, 'data': sku_monthly_data}

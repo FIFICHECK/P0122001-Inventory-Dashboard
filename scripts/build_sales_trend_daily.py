@@ -220,6 +220,76 @@ if DATE_KEYS:
     except Exception as _e3:
         print('gmv_by_month update skip:', _e3)
 
+# ── Calendar-correct KPI cards + month backfill (2026-10-01 month-boundary fix) ──
+# The summary roll above advances by ONE data-month (from_excel's latest GP month = 2026-08), so once
+# today is >=2 months past the latest GP month, the previous calendar month (2026-09 — which has a
+# COMPLETE month of daily reports but no GP row) is skipped: its GMV vanishes from the KPI cards, the
+# monthly chart and Tag 11. Fix: recompute the three cards by REAL calendar month (當月/上月/上上月),
+# preferring the GP monthly value when present else the daily sum; backfill any missing calendar month
+# into gmv_by_month; fill gmv_target.actual where it is still 0.
+try:
+    _now5 = datetime.date.today()
+    _p1d = _now5.replace(day=1) - datetime.timedelta(days=1)      # 上月
+    _p2d = _p1d.replace(day=1) - datetime.timedelta(days=1)       # 上上月
+    _gbm_lk = dict(zip(sd.get('gmv_by_month', {}).get('labels', []),
+                       sd.get('gmv_by_month', {}).get('data', [])))
+    _obm_lk = dict(zip(summ.get('orders_by_month', {}).get('labels', []),
+                       summ.get('orders_by_month', {}).get('data', [])))
+
+    def _day_gmv5(ym):
+        return round(sum(v for k, v in gmv_by_date.items() if k.startswith(ym)), 2)
+
+    def _day_ord5(ym):
+        return int(sum(orders_by_date.get(k, 0) for k in orders_by_date if k.startswith(ym)))
+
+    def _card5(dt):
+        ym = f"{dt:%Y-%m}"
+        g = _gbm_lk.get(ym)
+        if g:
+            o = int(_obm_lk.get(ym) or 0)
+            return {'label': f"{dt.month}月 {dt.year}", 'gmv': round(float(g), 2), 'orders': o,
+                    'avg': round(float(g) / o, 2) if o else 0}
+        g = _day_gmv5(ym); o = _day_ord5(ym)
+        return {'label': f"{dt.month}月 {dt.year}", 'gmv': g, 'orders': o,
+                'avg': round(g / o, 2) if o else 0}
+
+    _rolled_last = dict(summ.get('last_month', {}))   # post-roll == from_excel's this_month (GP, Aug)
+    summ['this_month'] = _card5(_now5)
+    summ['last_month'] = _card5(_p1d)
+    if _rolled_last.get('label') == f"{_p2d.month}月 {_p2d.year}":
+        summ['month_before_last'] = _rolled_last
+    else:
+        summ['month_before_last'] = _card5(_p2d)
+    print("KPI cards (calendar): 當月->{0} {1:,.0f} | 上月->{2} {3:,.0f} | 上上月->{4} {5:,.0f}".format(
+        summ['this_month']['label'], summ['this_month']['gmv'],
+        summ['last_month']['label'], summ['last_month']['gmv'],
+        summ['month_before_last']['label'], summ['month_before_last']['gmv']))
+
+    # backfill calendar months (current + previous) into gmv_by_month from daily when GP has no row
+    _pairs5 = dict(zip(sd['gmv_by_month'].get('labels', []), sd['gmv_by_month'].get('data', [])))
+    for _dt5 in (_now5, _p1d):
+        _ym5 = f"{_dt5:%Y-%m}"
+        if not _pairs5.get(_ym5):
+            _dv5 = _day_gmv5(_ym5)
+            if _dv5 > 0:
+                _pairs5[_ym5] = _dv5
+    _sorted5 = sorted(_pairs5.items())
+    sd['gmv_by_month'] = {'labels': [p[0] for p in _sorted5], 'data': [p[1] for p in _sorted5]}
+    print("gmv_by_month months: {0}".format(sd['gmv_by_month']['labels']))
+
+    # Tag 11: fill actual for a month (current + previous) that is still 0, from daily
+    _gt5 = sd.get('gmv_target')
+    if _gt5 and 'actual' in _gt5 and 'labels' in _gt5:
+        for _dt5 in (_now5, _p1d):
+            _ym5 = f"{_dt5:%Y-%m}"
+            if _ym5 in _gt5['labels']:
+                _ix5 = _gt5['labels'].index(_ym5)
+                if not _gt5['actual'][_ix5]:
+                    _gt5['actual'][_ix5] = _day_gmv5(_ym5)
+        print("gmv_target.actual: {0}".format(_gt5['actual']))
+except Exception as _e5:
+    print('calendar KPI fix skip:', _e5)
+
 # available_months
 for d in DATE_KEYS:
     mth = d[:7]

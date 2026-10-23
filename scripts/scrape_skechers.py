@@ -18,13 +18,22 @@ os.chdir(REPO)
 UA = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36'}
 
 CACHE = '/tmp/p0122001/skechers/all_products.json'
+MIN_PRODUCTS = 2000   # full scrape = ~3,949 products; anything smaller is partial
+MIN_STYLES = 1500     # full run = ~7,000 styles
+_COMPLETE = {'ok': True}   # flipped False if ANY page fails mid-pagination
 
 def fetch_all():
     all_products = []
     if os.path.exists(CACHE):
-        all_products = json.load(open(CACHE))
-        print(f"using cache: {len(all_products)} products")
-        return all_products
+        try:
+            cached = json.load(open(CACHE))
+        except Exception:
+            cached = []
+        # a poisoned/partial cache (0 or 250 products) must be ignored, not trusted
+        if len(cached) >= MIN_PRODUCTS:
+            print(f"using cache: {len(cached)} products")
+            return cached
+        print(f"ignoring poisoned cache ({len(cached)} products) — refetching")
     page = 1
     while True:
         req = urllib.request.Request(f'https://www.skechers.com.hk/products.json?limit=250&page={page}', headers=UA)
@@ -32,6 +41,7 @@ def fetch_all():
             d = json.load(urllib.request.urlopen(req, timeout=60))
         except Exception as e:
             print('ERR page', page, e)
+            _COMPLETE['ok'] = False   # partial data — never publish it
             break
         prods = d['products']
         all_products.extend(prods)
@@ -40,6 +50,11 @@ def fetch_all():
             break
         page += 1
         time.sleep(0.4)
+    # GUARD (2026-10-23): never cache an empty/failed scrape — a poisoned cache of
+    # `[]` makes every later run "succeed" with 0 products and 0 styles.
+    if not all_products:
+        print('ERR scrape returned 0 products (rate-limit/outage) — cache NOT written')
+        return all_products
     os.makedirs(os.path.dirname(CACHE), exist_ok=True)
     json.dump(all_products, open(CACHE, 'w'), ensure_ascii=False)
     return all_products
@@ -71,6 +86,22 @@ def build():
     # normalize colors to list
     for e in styles.values():
         e['colors'] = sorted(c for c in e['colors'] if c)
+    # GUARD (2026-10-23): a 0-style run must NEVER overwrite the good price file.
+    # Observed: Shopify /products.json returned HTTP 429, the script wrote `{}` over
+    # 6,942 styles, and the next build_price_check would have shown 0 matches / all
+    # "暫無數據" on the live dashboard. Fail loudly and keep the previous snapshot.
+    if not styles:
+        print('ERR 0 styles parsed — data/skechers_official_prices.json left UNTOUCHED')
+        print('    (previous snapshot kept; re-run later or wait out the Shopify 429)')
+        raise SystemExit(1)
+    # GUARD 2 (2026-10-23): a PARTIAL scrape (page 1 ok, page 2 → 429) produced 533
+    # styles and happily overwrote the full 6,942-style snapshot. Require a complete
+    # pagination run AND a sane style count before replacing the file.
+    if not _COMPLETE['ok'] or len(styles) < MIN_STYLES:
+        print(f"ERR incomplete scrape ({len(styles)} styles, complete={_COMPLETE['ok']}, "
+              f"min={MIN_STYLES}) — data/skechers_official_prices.json left UNTOUCHED")
+        print('    previous snapshot kept; re-run later (Shopify rate limit resets)')
+        raise SystemExit(1)
     json.dump(styles, open('data/skechers_official_prices.json', 'w'), ensure_ascii=False, indent=1)
     print(f"styles: {len(styles)}, total variants: {sum(len(e['variants']) for e in styles.values())}")
     # stats: how many match bare numeric patterns

@@ -264,11 +264,12 @@ try:
         summ['this_month']['label'], summ['this_month']['gmv'],
         summ['last_month']['label'], summ['last_month']['gmv'],
         summ['month_before_last']['label'], summ['month_before_last']['gmv']))
-
-    # backfill calendar months (current + previous) into gmv_by_month from daily when GP has no row
+    # backfill EVERY calendar month present in the daily data that GP has no row for
+    # (2026-11-01: current+previous ONLY was not enough — at the Nov boundary 2026-09, a daily-only
+    #  month, fell through again exactly like the original Oct-01 bug. Backfill from the daily dates.)
     _pairs5 = dict(zip(sd['gmv_by_month'].get('labels', []), sd['gmv_by_month'].get('data', [])))
-    for _dt5 in (_now5, _p1d):
-        _ym5 = f"{_dt5:%Y-%m}"
+    _months5 = sorted({k[:7] for k in gmv_by_date} | {f"{_now5:%Y-%m}", f"{_p1d:%Y-%m}", f"{_p2d:%Y-%m}"})
+    for _ym5 in _months5:
         if not _pairs5.get(_ym5):
             _dv5 = _day_gmv5(_ym5)
             if _dv5 > 0:
@@ -277,15 +278,16 @@ try:
     sd['gmv_by_month'] = {'labels': [p[0] for p in _sorted5], 'data': [p[1] for p in _sorted5]}
     print("gmv_by_month months: {0}".format(sd['gmv_by_month']['labels']))
 
-    # Tag 11: fill actual for a month (current + previous) that is still 0, from daily
+    # Tag 11: fill actual for ANY month that is still 0 but has daily data (same widening as above)
     _gt5 = sd.get('gmv_target')
     if _gt5 and 'actual' in _gt5 and 'labels' in _gt5:
-        for _dt5 in (_now5, _p1d):
-            _ym5 = f"{_dt5:%Y-%m}"
+        for _ym5 in _months5:
             if _ym5 in _gt5['labels']:
                 _ix5 = _gt5['labels'].index(_ym5)
                 if not _gt5['actual'][_ix5]:
-                    _gt5['actual'][_ix5] = _day_gmv5(_ym5)
+                    _dv5 = _day_gmv5(_ym5)
+                    if _dv5 > 0:
+                        _gt5['actual'][_ix5] = _dv5
         print("gmv_target.actual: {0}".format(_gt5['actual']))
 except Exception as _e5:
     print('calendar KPI fix skip:', _e5)
@@ -295,6 +297,13 @@ for d in DATE_KEYS:
     mth = d[:7]
     if mth not in sd.get('available_months', []):
         sd['available_months'].append(mth)
+# also expose calendar months that only exist in gmv_by_month (e.g. the in-progress month with 0 GMV
+# so far, or a daily-only month) — index.html reads available_months for the month dropdown, so a
+# missing current month means the user cannot pick 當月 at all (complained twice, 2026-09-28).
+for mth in sd.get('gmv_by_month', {}).get('labels', []):
+    if mth not in sd.get('available_months', []):
+        sd['available_months'].append(mth)
+sd['available_months'] = sorted(set(sd.get('available_months', [])))
 
 # ---------- 4. Write back ----------
 out = js[:m.start()] + json.dumps(sd, ensure_ascii=False, separators=(',', ':')) + js[m.end():]

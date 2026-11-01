@@ -260,6 +260,21 @@ try:
         summ['month_before_last'] = _rolled_last
     else:
         summ['month_before_last'] = _card5(_p2d)
+
+    # Idempotency guard (2026-11-01): _card5 takes `orders` from summary.orders_by_month, which comes
+    # from the GP Excel and has NO row for daily-only months. Re-running this script WITHOUT
+    # build_sales_trend_from_excel.py first therefore degrades the card orders to 0 (observed:
+    # 10月 3,840 → 0, 9月 815 → 0) and the output stops being byte-stable. Fill a ZERO order count from
+    # the daily data — only when the month actually has daily reports, and never touching a non-zero
+    # (GP/inherited) value, so the 8月/9月 inheritance stays as-is.
+    for _k5 in ('this_month', 'last_month', 'month_before_last'):
+        _c5 = summ.get(_k5) or {}
+        _mt5 = re.match(r'(\d{1,2})月 (\d{4})', str(_c5.get('label', '')))
+        if _c5.get('gmv') and not _c5.get('orders') and _mt5:
+            _o5 = _day_ord5(f"{_mt5.group(2)}-{int(_mt5.group(1)):02d}")
+            if _o5:
+                _c5['orders'] = _o5
+                _c5['avg'] = round(_c5['gmv'] / _o5, 2)
     print("KPI cards (calendar): 當月->{0} {1:,.0f} | 上月->{2} {3:,.0f} | 上上月->{4} {5:,.0f}".format(
         summ['this_month']['label'], summ['this_month']['gmv'],
         summ['last_month']['label'], summ['last_month']['gmv'],
